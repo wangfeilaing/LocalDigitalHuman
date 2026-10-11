@@ -27,9 +27,13 @@ if /i "%~3"=="check" set MODE=-VerifyOnly
 set USERARG=
 if not "%~4"=="" set USERARG=-User %~4
 
-echo Publishing to %IP%:%PORT%  %USERARG%
+rem Auto-use the deploy key if it exists, so no password prompts are needed.
+set KEYARG=
+if exist "%USERPROFILE%\.ssh\lighthouse_portfolio" set KEYARG=-KeyFile "%USERPROFILE%\.ssh\lighthouse_portfolio"
+
+echo Publishing to %IP%:%PORT%  %USERARG% %KEYARG%
 echo.
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0build\deploy_to_server.ps1" -ServerIp %IP% -Port %PORT% %USERARG% %MODE%
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0build\deploy_to_server.ps1" -ServerIp %IP% -Port %PORT% %USERARG% %KEYARG% %MODE%
 set RC=%ERRORLEVEL%
 echo.
 if not "%RC%"=="0" (echo Deploy failed with exit code %RC%) else (echo Deploy finished.)

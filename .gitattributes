@@ -5,7 +5,7 @@
 *.bat text eol=crlf
 *.vbs text eol=crlf
 
-# 二进制资源不参与行尾转换（也便于 git 正确判断 diff）
+# 二进制资源不参与行尾转换
 *.mp4 binary
 *.mp3 binary
 *.jpg binary
