@@ -60,6 +60,11 @@ h1{margin:22px 0 0;font-size:clamp(30px,5.2vw,52px);line-height:1.14;letter-spac
   text-decoration:none;color:inherit;transition:border-color .18s,transform .18s,box-shadow .18s}
 a.card:hover{border-color:rgba(126,170,255,.5);transform:translateY(-2px);
   box-shadow:0 24px 60px rgba(40,80,180,.24)}
+.card:hover{border-color:rgba(126,170,255,.5);transform:translateY(-2px);
+  box-shadow:0 24px 60px rgba(40,80,180,.24)}
+.actions{margin-top:18px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.repo{color:#8fa6cc;text-decoration:none;font-size:14.2px;border-bottom:1px dashed rgba(143,166,204,.45)}
+.repo:hover{color:#7fb4ff;border-bottom-color:rgba(127,180,255,.6)}
 .card h2{margin:0;font-size:21px;font-weight:640;letter-spacing:-.01em}
 .card .tag{margin:8px 0 0;color:#8fa6cc;font-size:14.5px}
 .card p{margin:14px 0 0;color:#9fb0cc;font-size:14.6px}
@@ -67,6 +72,8 @@ a.card:hover{border-color:rgba(126,170,255,.5);transform:translateY(-2px);
 .tags span{padding:4px 10px;border-radius:999px;font-size:12.4px;color:#a9c2e8;
   border:1px solid rgba(126,170,255,.26);background:rgba(126,170,255,.08)}
 .go{margin-top:18px;display:inline-flex;align-items:center;gap:8px;color:#7fb4ff;font-size:14.6px}
+.demo-hint{margin:14px 0 0;padding:8px 12px;border-radius:10px;font-size:13.4px;color:#ffd479;
+  border:1px dashed rgba(255,212,121,.4);background:rgba(255,212,121,.07);display:inline-block}
 .card.off{opacity:.55;cursor:default}
 .card.off .go{color:#7d8ba6}
 footer{position:relative;margin-top:56px;padding-top:22px;border-top:1px solid rgba(255,255,255,.08);
@@ -91,21 +98,33 @@ PORTAL_HTML = """<!doctype html>
 {cards}
   </div>
   <footer>
-    共 {total} 个项目，{online} 个可在线访问 · 全部为本地推理产物，页面为静态托管<br>
-    在线演示均为脱敏数据；真实生成能力需要 Windows + NVIDIA 显卡在本机运行
+    共 {total} 个项目，{online} 个可在线访问 · 演示数据均为脱敏生成，真实业务数据未公开<br>
+    数字人项目为本地推理产物；学员交付系统为服务器上常驻运行的完整应用（含登录与数据库）
   </footer>
 </div>
+<script>
+// 独立端口部署的项目（Next.js 这类绝对根路径的应用）：卡片链接按当前访问的主机名拼出来，
+// 换 IP / 以后绑域名都不用改这份配置。
+// 注意：这段 JS 在 Python 的 str.format 模板里，花括号必须写成 {{{{ }}}}。
+document.querySelectorAll('[data-proxy-port]').forEach(function (el) {{
+  el.setAttribute('href', location.protocol + '//' + location.hostname + ':' + el.dataset.proxyPort + '/');
+}});
+</script>
 </body>
 </html>
 """
 
-CARD_ONLINE = """    <a class="card" href="./{slug}/">
+CARD_ONLINE = """    <div class="card">
       <h2>{title}</h2>
       <p class="tag">{tagline}</p>
       <p>{description}</p>
       <div class="tags">{tags}</div>
-      <span class="go">进入项目 →</span>
-    </a>"""
+      {account}
+      <div class="actions">
+        <a class="go" href="{enter_href}"{proxy_attr}>进入项目 →</a>
+        {repo_link}
+      </div>
+    </div>"""
 
 CARD_OFFLINE = """    <div class="card off">
       <h2>{title}</h2>
@@ -141,17 +160,38 @@ def build_stage(config: dict) -> tuple[int, int, float]:
 
         total += 1
         tags = "".join(f"<span>{html.escape(str(tag))}</span>" for tag in project.get("tags", []))
+        # 需要后端的项目跑在独立端口上：卡片链接用当前访问的主机名 + 端口拼出来，
+        # 这样换 IP / 以后绑域名都不用改配置。
+        proxy_port = project.get("proxyPort") if project.get("kind") == "proxy" else None
+        proxy_attr = f' data-proxy-port="{proxy_port}"' if proxy_port else ""
+        account = ""
+        if project.get("demoAccount"):
+            account = f'<p class="demo-hint">演示账号：{html.escape(str(project["demoAccount"]))}</p>'
+        repo = project.get("repo")
+        repo_link = (f'<a class="repo" href="{html.escape(str(repo))}" target="_blank" rel="noopener">'
+                     "源码仓库 ↗</a>") if repo else ""
+        enter_href = "#" if proxy_port else f"./{project.get('slug', '')}/"
         fields = {
             "slug": project.get("slug", ""),
             "title": html.escape(project.get("title", "")),
             "tagline": html.escape(project.get("tagline", "")),
             "description": html.escape(project.get("description", "")),
             "tags": tags,
+            "proxy_attr": proxy_attr,
+            "account": account,
+            "repo_link": repo_link,
+            "enter_href": enter_href,
         }
         enabled = bool(project.get("enabled"))
         source_dir = Path(project.get("dir", "")) if project.get("dir") else None
 
-        if enabled and source_dir and source_dir.is_dir():
+        if enabled and project.get("kind") == "proxy":
+            # 需要后端的项目不拷贝任何文件（代码在服务器上单独部署），
+            # 由 nginx 在独立端口上整体反代。这里只负责在门户页列出它。
+            online += 1
+            cards.append(CARD_ONLINE.format(**fields))
+            print(f"  [代理] {project['slug']:<18} -> 端口 {proxy_port} 反代到本机 {project.get('backendPort')}")
+        elif enabled and source_dir and source_dir.is_dir():
             # 防御：源目录里若包含暂存目录，copytree 会无限递归直到路径超长
             if STAGE == source_dir or STAGE.is_relative_to(source_dir):
                 raise SystemExit(
@@ -223,21 +263,6 @@ def build_web_config(config: dict) -> str:
         "    gzip_min_length 1024;",
         "    gzip_types text/plain text/css application/javascript application/json image/svg+xml;",
     ]
-    for project in config.get("projects", []):
-        if not (project.get("enabled") and project.get("kind") == "proxy"):
-            continue
-        backend = project.get("backendPort")
-        lines += [
-            "",
-            f"    # {project.get('title', project['slug'])}：反代到本机 {backend}",
-            f"    location /{project['slug']}/ {{",
-            f"        proxy_pass http://127.0.0.1:{backend}/;",
-            "        proxy_set_header Host $host;",
-            "        proxy_set_header X-Real-IP $remote_addr;",
-            "        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;",
-            "        proxy_set_header X-Forwarded-Proto $scheme;",
-            "    }",
-        ]
     lines += [
         "",
         "    location / {",
@@ -245,6 +270,43 @@ def build_web_config(config: dict) -> str:
         "    }",
         "}",
     ]
+
+    # 需要后端的项目跑在**独立端口**上，而不是挂在主站路径下。
+    # 原因：Next.js 这类应用的静态资源是 /_next/...、接口是 /api/...（都是绝对根路径），
+    # 挂到 /子路径/ 下要么全部 404，要么必须改代码加 basePath（实测这个项目有 108 处
+    # fetch('/api/...')，加 basePath 会和 /api 前缀打架）。独立端口零改动、零风险。
+    for project in config.get("projects", []):
+        if not (project.get("enabled") and project.get("kind") == "proxy"):
+            continue
+        proxy_port = project.get("proxyPort")
+        if not proxy_port:
+            continue
+        backend = project.get("backendPort")
+        body_limit = project.get("maxBodySize", "500m")
+        lines += [
+            "",
+            f"# {project.get('title', project['slug'])}：独立端口 {proxy_port} 整体反代到本机 {backend}",
+            "server {",
+            f"    listen {proxy_port} default_server;",
+            f"    listen [::]:{proxy_port} default_server;",
+            "    server_name _;",
+            "",
+            f"    client_max_body_size {body_limit};",
+            "",
+            "    location / {",
+            f"        proxy_pass http://127.0.0.1:{backend};",
+            "        proxy_http_version 1.1;",
+            "        proxy_set_header Host $host;",
+            "        proxy_set_header X-Real-IP $remote_addr;",
+            "        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;",
+            "        proxy_set_header X-Forwarded-Proto $scheme;",
+            "        proxy_set_header Upgrade $http_upgrade;",
+            '        proxy_set_header Connection "upgrade";',
+            "        proxy_read_timeout 300s;",
+            "        proxy_send_timeout 300s;",
+            "    }",
+            "}",
+        ]
     return "\n".join(lines) + "\n"
 
 

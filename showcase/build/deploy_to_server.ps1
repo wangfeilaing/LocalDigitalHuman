@@ -96,6 +96,17 @@ $base = "http://${ServerIp}:$Port"
 function Assert-Paths {
     if (Test-Site "$base/") { Ok "portal page 200 -> $base/" } else { Die "cannot open $base/ : check the cloud firewall/security group for TCP $Port" }
     foreach ($project in $enabled) {
+        if ($project.kind -eq 'proxy' -and $project.proxyPort) {
+            # 需要后端的项目跑在独立端口上（Next.js 这类应用的资源路径是绝对根路径，
+            # 挂在子路径下必然 404）。这个端口需要在云防火墙里额外放行。
+            $proxyUrl = "http://${ServerIp}:$($project.proxyPort)/"
+            if (Test-Site $proxyUrl) {
+                Ok "/$($project.slug)/ -> $proxyUrl 200 (backend proxied)"
+            } else {
+                Warn "$proxyUrl not reachable - open TCP $($project.proxyPort) in the cloud firewall, and check the backend service"
+            }
+            continue
+        }
         $url = "$base/$($project.slug)/"
         if (Test-Site $url) { Ok "/$($project.slug)/ 200" } else { Warn "$url not reachable" }
     }
@@ -274,7 +285,10 @@ Published. Send this link to the interviewer:
 
     $base/
 
-Projects: $(($enabled | ForEach-Object { "$base/$($_.slug)/" }) -join '  ')
+Projects: $(($enabled | ForEach-Object {
+    if ($_.kind -eq 'proxy' -and $_.proxyPort) { "http://${ServerIp}:$($_.proxyPort)/" }
+    else { "$base/$($_.slug)/" }
+}) -join '  ')
 
 Before the interview: turn OFF wifi on your phone, switch to 4G/5G,
 and open that link once more.

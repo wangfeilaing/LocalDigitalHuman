@@ -184,20 +184,55 @@ cd D:\LocalDigitalHuman\showcase
 
 ### 需要后端的项目要注意
 
-配置里 `"kind": "proxy"` 的项目会被 nginx 反代到本机端口（生成的配置形如
-`location /student-delivery/ { proxy_pass http://127.0.0.1:3000/; }`）。你还需要在服务器上：
+`"kind": "proxy"` 的项目跑在**独立端口**上（不是挂在主站路径下）：
+
+```jsonc
+{ "slug": "student-delivery", "kind": "proxy",
+  "backendPort": 3000,          // 后端进程实际监听的端口（只监听 127.0.0.1）
+  "proxyPort": 3001,            // nginx 对外暴露的端口
+  "maxBodySize": "500m" }       // 允许的上传体积
+```
+
+生成的 nginx 配置会多出一个独立的 server 块：
+
+```nginx
+server {
+    listen 3001 default_server;
+    client_max_body_size 500m;
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 300s;
+    }
+}
+```
+
+**为什么不挂在 `/student-delivery/` 子路径下**（实测教训）：Next.js 这类应用的静态资源是
+`/_next/...`、接口是 `/api/...`，全是**绝对根路径**。挂到子路径下要么整页 404，
+要么必须改代码加 `basePath`——而这个项目里有 108 处 `fetch('/api/...')`，
+加了 `basePath` 反而会和 `/api` 前缀打架。独立端口零代码改动、零风险。
+代价是**要在云防火墙里多放行一个端口**（这里是 3001）。
+
+在服务器上你还需要：
 
 1. 把后端程序放上去（建议 `/opt/<项目名>/`）并装依赖；
-2. 写一个 **systemd 服务**让它常驻并开机自启（裸 `nohup` 重启即失效）；
+2. 写一个 **systemd 服务**让它常驻并开机自启（裸 `nohup` 重启即失效），
+   `EnvironmentFile` 指向 `.env`，`ExecStart` 直接调 `node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3000`
+   （不要用 `npm run start`，package.json 里的脚本自带 `-H 0.0.0.0`，会覆盖回环地址）；
 3. 让后端**监听 `127.0.0.1` 而不是 `0.0.0.0`**（外面有 nginx 挡着，别把端口直接暴露）。
 
 三个现实约束：
 
-- **内存**：2核2G 跑一个轻后端可以；再叠加 MySQL（约 400MB）就要盯内存，建议升 2核4G。
-- **绝不要把开发库直接挂公网**：学员/客户数据属于个人信息，上线前必须换成演示数据，
-  至少也要加登录鉴权 + nginx 层 `auth_basic`。这是合规问题，不是技术偏好。
-- **反代路径**：`handle_path` 会**去掉** `/student-delivery` 前缀再转发，
-  所以后端应按根路径（`/`）提供路由；如果后端写死了子路径，改用 `handle` 保留前缀。
+- **内存**：2核2G 跑一个 Node/Next 常驻进程实测只占 ~65MB，很宽裕；
+  但再叠加 MySQL（约 400MB）就要盯内存。SQLite 方案没有这个问题。
+- **构建内存**：Next.js 构建在 2G 机器上有 OOM 风险，先加 2GB swap 再构建（本项目已加）。
+- **绝不要把生产库直接挂公网**：学员/客户数据属于个人信息。合规做法是准备一份
+  **脱敏演示库**（保留表结构与关联关系，把姓名/手机号/身份证/银行账号/密钥等全部替换为
+  程序生成的假值），并且**在生成后做交叉校验**：非保留列与原库零交集 + 格式扫描 + 姓名语境扫描。
+  本仓库的 `showcase/build/` 里没有这个脚本（它是一次性工具），思路可直接照搬。
 
 ---
 
@@ -238,10 +273,13 @@ cd D:\LocalDigitalHuman\showcase
 - [ ] 手机点「打开在线演示」→ 会看到**桌面界面整体缩放**的视图 + 一行「建议用电脑打开」提示，这是刻意设计：
       工作台是桌面端工具界面，演示页固定按 1280px 桌面宽渲染，手机上不重排、不横向溢出
 - [ ] 电脑上打开演示页：切四个面板、切人物、点「开始生成」能看到进度条跑完并弹出成片
+- [ ] **需要后端的项目（独立端口）也在线**：`http://IP:3001/` 能打开登录页，用门户卡片上写的
+      演示账号能登进去（这个端口要在云防火墙里单独放行）
 - [ ] 成片视频能播放、能拖进度条（nginx/EdgeOne 都支持 Range）
 - [ ] 界面截图能点开看大图
-- [ ] 把所有链接（主站、演示、GitHub 仓库）整理成一段话放进简历/邮件
-- [ ] 服务器已设开机自启（`systemctl enable nginx`），避免面试当天服务器重启后链接 502
+- [ ] 把所有链接（门户、各项目、GitHub 仓库）整理成一段话放进简历/邮件
+- [ ] 服务器已设开机自启（`systemctl enable nginx` + `systemctl enable <后端服务名>`），
+      避免面试当天服务器重启后链接 502
 
 ## 五之二、面试官大概率会怎么点（提前自己走一遍）
 
