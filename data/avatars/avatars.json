@@ -1,0 +1,265 @@
+[
+  {
+    "id": "fa346f6b6c5946dc9338b254e51172d9",
+    "name": "数字人1",
+    "video": "fa346f6b6c5946dc9338b254e51172d9.mp4",
+    "poster": "fa346f6b6c5946dc9338b254e51172d9.jpg",
+    "personId": "3e9d57f9fa324957aa14b7cbce6763dc",
+    "createdAt": "2026-08-11 16:05:33",
+    "duration": 509.307007,
+    "usageCount": 7,
+    "lastStartOffset": 282.0,
+    "recentStartOffsets": [
+      96.0,
+      462.0,
+      279.0,
+      204.0,
+      36.0,
+      39.0,
+      282.0
+    ]
+  },
+  {
+    "id": "841ae75f4f8f4b86bbdb18e88750adbe",
+    "name": "数字人2",
+    "video": "841ae75f4f8f4b86bbdb18e88750adbe.mp4",
+    "poster": "841ae75f4f8f4b86bbdb18e88750adbe.jpg",
+    "personId": "3e9d57f9fa324957aa14b7cbce6763dc",
+    "createdAt": "2026-08-11 16:09:04",
+    "duration": 208.212993,
+    "usageCount": 10,
+    "lastStartOffset": 102.0,
+    "recentStartOffsets": [
+      120.0,
+      99.0,
+      12.0,
+      30.0,
+      84.0,
+      135.0,
+      186.0,
+      171.0,
+      9.0,
+      102.0
+    ]
+  },
+  {
+    "id": "bb6bd72de2b247fab91aa21c52278d31",
+    "name": "数字人3",
+    "video": "bb6bd72de2b247fab91aa21c52278d31.mp4",
+    "poster": "bb6bd72de2b247fab91aa21c52278d31.jpg",
+    "personId": "3e9d57f9fa324957aa14b7cbce6763dc",
+    "createdAt": "2026-08-13 15:28:36",
+    "duration": 551.125624,
+    "usageCount": 9,
+    "lastStartOffset": 375.0,
+    "recentStartOffsets": [
+      471.0,
+      525.0,
+      165.0,
+      12.0,
+      213.0,
+      357.0,
+      339.0,
+      174.0,
+      375.0
+    ]
+  },
+  {
+    "id": "6f7d0090279b4d1d8cef4984e0938d2d",
+    "name": "数字人4",
+    "video": "6f7d0090279b4d1d8cef4984e0938d2d.mp4",
+    "poster": "6f7d0090279b4d1d8cef4984e0938d2d.jpg",
+    "personId": "3e9d57f9fa324957aa14b7cbce6763dc",
+    "createdAt": "2026-08-14 20:41:32",
+    "duration": 201.247347,
+    "usageCount": 7,
+    "lastStartOffset": 69.0,
+    "recentStartOffsets": [
+      81.0,
+      177.0,
+      156.0,
+      144.0,
+      117.0,
+      66.0,
+      69.0
+    ]
+  },
+  {
+    "id": "fa35d2eb6ade42ba8e4ef58172471296",
+    "name": "数字人5",
+    "video": "fa35d2eb6ade42ba8e4ef58172471296.mp4",
+    "poster": "fa35d2eb6ade42ba8e4ef58172471296.jpg",
+    "personId": "3e9d57f9fa324957aa14b7cbce6763dc",
+    "createdAt": "2026-08-14 20:41:57",
+    "duration": 232.292426,
+    "usageCount": 7,
+    "lastStartOffset": 180.0,
+    "recentStartOffsets": [
+      39.0,
+      57.0,
+      15.0,
+      201.0,
+      111.0,
+      54.0,
+      180.0
+    ]
+  },
+  {
+    "id": "0fd697a8822f462dbbf5e7c242593de9",
+    "name": "讲师D数字人1",
+    "video": "0fd697a8822f462dbbf5e7c242593de9.mp4",
+    "poster": "0fd697a8822f462dbbf5e7c242593de9.jpg",
+    "personId": "7aa4ec64905b4d02aa4b87c0d8a07034",
+    "createdAt": "2026-08-14 21:13:48",
+    "duration": 366.875283,
+    "usageCount": 3,
+    "lastStartOffset": 3.0,
+    "recentStartOffsets": [
+      219.0,
+      240.0,
+      3.0
+    ]
+  },
+  {
+    "id": "e5d10c4c68ef4fd8b1d850564549ea27",
+    "name": "讲师A6",
+    "video": "e5d10c4c68ef4fd8b1d850564549ea27.mp4",
+    "poster": "e5d10c4c68ef4fd8b1d850564549ea27.jpg",
+    "personId": "3e9d57f9fa324957aa14b7cbce6763dc",
+    "createdAt": "2026-08-14 21:25:42",
+    "duration": 276.34068,
+    "usageCount": 8,
+    "lastStartOffset": 198.0,
+    "recentStartOffsets": [
+      90.0,
+      105.0,
+      135.0,
+      165.0,
+      240.0,
+      15.0,
+      231.0,
+      198.0
+    ]
+  },
+  {
+    "id": "9d30d2af05b540d78b725448dac4582c",
+    "name": "讲师D数字人2",
+    "video": "9d30d2af05b540d78b725448dac4582c.mp4",
+    "poster": "9d30d2af05b540d78b725448dac4582c.jpg",
+    "personId": "7aa4ec64905b4d02aa4b87c0d8a07034",
+    "createdAt": "2026-08-15 00:15:38",
+    "duration": 276.7122,
+    "usageCount": 3,
+    "lastStartOffset": 147.0,
+    "recentStartOffsets": [
+      204.0,
+      180.0,
+      147.0
+    ]
+  },
+  {
+    "id": "a0ef3599658041f38e760928d33961d5",
+    "name": "讲师A7",
+    "video": "a0ef3599658041f38e760928d33961d5.mp4",
+    "poster": "a0ef3599658041f38e760928d33961d5.jpg",
+    "personId": "3e9d57f9fa324957aa14b7cbce6763dc",
+    "createdAt": "2026-08-15 00:31:20",
+    "duration": 248.105215,
+    "usageCount": 3,
+    "lastStartOffset": 228.0,
+    "recentStartOffsets": [
+      39.0,
+      15.0,
+      228.0
+    ]
+  },
+  {
+    "id": "a12e995e00de4c6db766bbb739dbd774",
+    "name": "讲师A8",
+    "video": "a12e995e00de4c6db766bbb739dbd774.mp4",
+    "poster": "a12e995e00de4c6db766bbb739dbd774.jpg",
+    "personId": "3e9d57f9fa324957aa14b7cbce6763dc",
+    "createdAt": "2026-08-15 00:35:30",
+    "duration": 117.70195,
+    "usageCount": 10,
+    "lastStartOffset": 45.0,
+    "recentStartOffsets": [
+      39.0,
+      9.0,
+      12.0,
+      90.0,
+      78.0,
+      96.0,
+      33.0,
+      75.0,
+      48.0,
+      45.0
+    ]
+  },
+  {
+    "id": "e470162019a44619be3f08f2bef5885e",
+    "name": "讲师D数字人3",
+    "video": "e470162019a44619be3f08f2bef5885e.mp4",
+    "poster": "e470162019a44619be3f08f2bef5885e.jpg",
+    "personId": "7aa4ec64905b4d02aa4b87c0d8a07034",
+    "createdAt": "2026-08-15 00:40:02",
+    "duration": 143.940499,
+    "usageCount": 0,
+    "lastStartOffset": 0.0,
+    "recentStartOffsets": []
+  },
+  {
+    "id": "3e378518bfac449493252507cca3f404",
+    "name": "讲师D数字人4",
+    "video": "3e378518bfac449493252507cca3f404.mp4",
+    "poster": "3e378518bfac449493252507cca3f404.jpg",
+    "personId": "7aa4ec64905b4d02aa4b87c0d8a07034",
+    "createdAt": "2026-08-15 00:48:24",
+    "duration": 229.970431,
+    "usageCount": 0,
+    "lastStartOffset": 0.0,
+    "recentStartOffsets": []
+  },
+  {
+    "id": "ee2da857232f48e497c84d30f504d02a",
+    "name": "讲师D数字人5",
+    "video": "ee2da857232f48e497c84d30f504d02a.mp4",
+    "poster": "ee2da857232f48e497c84d30f504d02a.jpg",
+    "personId": "7aa4ec64905b4d02aa4b87c0d8a07034",
+    "createdAt": "2026-08-15 00:59:14",
+    "duration": 166.301315,
+    "usageCount": 1,
+    "lastStartOffset": 18.0,
+    "recentStartOffsets": [
+      18.0
+    ]
+  },
+  {
+    "id": "e20a6056437c4cbb946e122f7ba28d31",
+    "name": "讲师D数字人6",
+    "video": "e20a6056437c4cbb946e122f7ba28d31.mp4",
+    "poster": "e20a6056437c4cbb946e122f7ba28d31.jpg",
+    "personId": "7aa4ec64905b4d02aa4b87c0d8a07034",
+    "createdAt": "2026-08-15 01:05:32",
+    "duration": 282.911927,
+    "usageCount": 1,
+    "lastStartOffset": 27.0,
+    "recentStartOffsets": [
+      27.0
+    ]
+  },
+  {
+    "id": "d7676309c2484b21bbbfba9881902073",
+    "name": "讲师D数字人",
+    "video": "d7676309c2484b21bbbfba9881902073.mp4",
+    "poster": "d7676309c2484b21bbbfba9881902073.jpg",
+    "personId": "7aa4ec64905b4d02aa4b87c0d8a07034",
+    "createdAt": "2026-08-18 19:35:01",
+    "duration": 341.031474,
+    "usageCount": 1,
+    "lastStartOffset": 9.0,
+    "recentStartOffsets": [
+      9.0
+    ]
+  }
+]

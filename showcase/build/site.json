@@ -1,0 +1,31 @@
+{
+  "_comment": "站点总配置：门户页与部署脚本都读这个文件。加项目 = 在这里加一段，然后重跑部署。",
+  "title": "AI 工程作品集",
+  "subtitle": "本地推理的内容生产工具与业务系统",
+  "port": 8080,
+  "remoteRoot": "/var/www/site",
+  "projects": [
+    {
+      "slug": "digital-human",
+      "title": "本地数字人工作台",
+      "tagline": "一句文案进，4K 数字人短视频出",
+      "description": "语音克隆、口型同步、字幕逐字对齐、智能 B-roll 全流程跑在一台 RTX 3080 上，不依赖云端服务。后端是单文件 Python 标准库服务，前端零构建。",
+      "dir": "D:\\LocalDigitalHuman\\showcase",
+      "kind": "static",
+      "tags": ["Python 标准库后端", "原生 JS 零构建", "本地模型推理", "4K 导出", "任务队列"],
+      "enabled": true
+    },
+    {
+      "_comment": "还没准备好的项目：把 visible 设为 false 就不会出现在门户页上（面试官绝不该看到 TODO）。准备好后补 title/description/dir，改 enabled+visible 为 true 重新部署即可。",
+      "slug": "student-delivery",
+      "title": "学员交付管理系统",
+      "tagline": "",
+      "description": "",
+      "dir": "",
+      "kind": "static",
+      "tags": [],
+      "enabled": false,
+      "visible": false
+    }
+  ]
+}

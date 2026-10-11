@@ -1,0 +1,57 @@
+# ---- 运行产物 ----
+temp/
+logs/
+__pycache__/
+*.pyc
+视频输出/
+预览/
+
+# ---- 手动备份（git 历史已替代） ----
+backups/
+
+# ---- 大体积素材与模型（不入库，索引 JSON 保留） ----
+data/avatars/*
+!data/avatars/avatars.json
+data/broll/
+data/model-inputs/
+data/models/
+data/music/*
+!data/music/music.json
+# 真人声音样本属于个人生物特征数据，绝不入库（voices.json 索引保留，发布前由导出脚本脱敏）
+data/voices/*
+!data/voices/voices.json
+data/elevenlabs-tests/
+data/face-cache/
+
+# ---- 展示站（showcase）----
+# fixtures/ 是真实接口原始抓包（含云端账号信息），只在本机用作构建输入
+showcase/demo/fixtures/
+# 临时验收用的探针/覆盖页（_probe.html、_recheck.html、_verify.html 之类）
+showcase/_*.html
+
+# ---- 系统杂项 ----
+Thumbs.db
+desktop.ini
+界面检查*.png
+
+# ---- 第三方命令行工具（体积大，按需自行下载） ----
+tools/bin/
+
+# ---- 本机密钥与运行时状态 ----
+data/elevenlabs-accounts.json
+data/task-queue.json
+local-config.json
+
+# ---- 安装器构建产物（构建脚本 setup.iss/build-staging.ps1 入库） ----
+installer/staging/
+installer/output/
+installer/bundle/
+
+# ---- 迁移进来的外部组件（2026-08-18 从 C 盘迁入，二进制不入库） ----
+modules/
+runtime/
+data/modelscope-cache/
+
+# ---- 多项目站点构建产物（由 build_site.py 生成） ----
+_site/
+_site.nginx.conf

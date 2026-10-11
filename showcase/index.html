@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>本地数字人工作台 · 项目展示</title>
+<meta name="description" content="本地数字人工作台：语音克隆、口型同步、字幕逐字对齐、B-roll 包装全流程跑在一台 RTX 3080 上，不依赖任何云端服务。">
+<meta name="theme-color" content="#080b14">
+<link rel="icon" type="image/png" href="./assets/app-icon.png">
+<style>
+/* ============================================================
+   设计令牌
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#080b14;
+  --panel:rgba(255,255,255,.026);
+  --panel-2:rgba(255,255,255,.05);
+  --line:rgba(255,255,255,.08);
+  --line-2:rgba(255,255,255,.15);
+  --fg:#eaeefb;
+  --fg-2:#aab4ca;
+  --fg-3:#7c879f;
+  --blue:#5b7cfa;
+  --violet:#9d6bff;
+  --cyan:#4fd1e0;
+  --r-lg:20px;
+  --r-md:16px;
+  --r-sm:11px;
+  --maxw:1200px;
+  --nav-h:64px;
+  --ease:cubic-bezier(.22,.61,.36,1);
+}
+html{
+  scroll-behavior:smooth;
+  scroll-padding-top:calc(var(--nav-h) + 24px);
+  -webkit-text-size-adjust:100%;
+}
+body{
+  margin:0;
+  background-color:var(--bg);
+  color:var(--fg);
+  font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC","Hiragino Sans GB","Source Han Sans SC",sans-serif;
+  font-size:16px;
+  line-height:1.72;
+  letter-spacing:.005em;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+#glow{
+  position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(880px 620px at 10% -8%,rgba(91,124,250,.20),transparent 62%),
+    radial-gradient(760px 560px at 92% 4%,rgba(157,107,255,.16),transparent 64%),
+    radial-gradient(900px 700px at 50% 108%,rgba(79,209,224,.08),transparent 66%);
+}
+img,video{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+h1,h2,h3,h4,p{margin:0}
+ul{margin:0;padding:0;list-style:none}
+::selection{background:rgba(91,124,250,.35)}
+
+.wrap{width:100%;max-width:var(--maxw);margin:0 auto;padding:0 28px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Cascadia Mono",monospace;font-size:.92em}
+
+/* ============================================================
+   顶部导航
+   ============================================================ */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:80;
+  height:var(--nav-h);
+  background:rgba(8,11,20,.66);
+  backdrop-filter:blur(16px) saturate(150%);
+  -webkit-backdrop-filter:blur(16px) saturate(150%);
+  border-bottom:1px solid rgba(255,255,255,.055);
+}
+.nav-in{height:100%;display:flex;align-items:center;gap:28px}
+.brand{display:flex;align-items:center;gap:11px;flex:0 0 auto;font-weight:620;letter-spacing:.01em}
+.brand img{width:28px;height:28px;border-radius:8px;border:1px solid var(--line-2)}
+.brand span{font-size:15.5px}
+.nav-links{display:flex;align-items:center;gap:4px;margin-left:auto;flex-wrap:nowrap}
+.nav-links a{
+  font-size:13.5px;color:var(--fg-2);padding:7px 12px;border-radius:9px;
+  transition:color .18s var(--ease),background .18s var(--ease);white-space:nowrap;
+}
+.nav-links a:hover{color:var(--fg);background:var(--panel-2)}
+.nav-links a.active{color:var(--fg);background:rgba(91,124,250,.14)}
+
+/* 按钮 */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-size:14px;font-weight:560;line-height:1;padding:12px 20px;border-radius:11px;
+  border:1px solid transparent;cursor:pointer;white-space:nowrap;
+  transition:transform .18s var(--ease),box-shadow .22s var(--ease),background .18s var(--ease),border-color .18s var(--ease);
+}
+.btn-primary{
+  color:#fff;
+  background:linear-gradient(135deg,#5b7cfa,#8a63ff 60%,#a473ff);
+  box-shadow:0 6px 22px -8px rgba(91,124,250,.85),inset 0 1px 0 rgba(255,255,255,.24);
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px 30px -8px rgba(120,110,255,.9),inset 0 1px 0 rgba(255,255,255,.3)}
+.btn-ghost{color:var(--fg);background:var(--panel-2);border-color:var(--line-2)}
+.btn-ghost:hover{background:rgba(255,255,255,.085);border-color:rgba(255,255,255,.24)}
+.btn-sm{padding:9px 15px;font-size:13px;border-radius:10px}
+.btn-lg{padding:15px 26px;font-size:15px}
+.btn:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+
+/* ============================================================
+   Hero
+   ============================================================ */
+.hero{position:relative;overflow:hidden;isolation:isolate;padding:calc(var(--nav-h) + 80px) 0 88px;min-height:100vh;display:flex;align-items:center}
+@supports (min-height:100svh){.hero{min-height:100svh}}
+/* 背景：纯 CSS 冷色光晕。hero.mp4 是 9:16 竖版成片，铺满 16:9 会裁掉人物主体，
+   所以不再做全屏视频背景，成片统一放到右栏的竖版面板里。 */
+.hero-veil{
+  position:absolute;inset:0;z-index:-1;
+  background:
+    radial-gradient(720px 620px at 80% 30%,rgba(91,124,250,.28),transparent 66%),
+    radial-gradient(600px 520px at 92% 66%,rgba(157,107,255,.2),transparent 68%),
+    radial-gradient(820px 600px at 6% 12%,rgba(79,209,224,.075),transparent 70%),
+    linear-gradient(180deg,rgba(8,11,20,.35) 0%,rgba(8,11,20,0) 34%,rgba(8,11,20,.7) 86%,var(--bg) 100%);
+}
+/* 桌面端：左文右竖屏视频 两栏 */
+.hero-inner{
+  position:relative;max-width:none;
+  display:grid;grid-template-columns:minmax(0,1fr) auto;
+  gap:clamp(32px,4vw,64px);align-items:center;
+}
+.hero-copy{min-width:0}
+.hero-reel{display:grid;justify-items:center;gap:14px}
+.reel-frame{
+  width:clamp(240px,26vw,340px);
+  aspect-ratio:9/16;border-radius:20px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.12);
+  background:#05070d;
+  box-shadow:0 30px 80px rgba(80,130,255,.25);
+}
+.reel-frame video{width:100%;height:100%;object-fit:cover;display:block}
+.reel-cap{font-size:12.4px;color:var(--fg-3);text-align:center;line-height:1.6;max-width:340px}
+/* 矮屏（如 1440×760）时按可用高度反推竖屏面板宽度，避免两栏被撑出首屏。
+   可用高度 ≈ 100svh − 272px（上下内边距 + 说明文字），宽 = 高 × 9/16。 */
+@supports (min-height:100svh){
+  .reel-frame{width:clamp(240px,min(26vw,calc((100svh - 272px) * .5625)),340px)}
+}
+.pill{
+  display:inline-flex;align-items:center;gap:9px;font-size:12.5px;color:var(--fg-2);
+  padding:6px 14px 6px 11px;border:1px solid var(--line);border-radius:999px;
+  background:rgba(255,255,255,.04);backdrop-filter:blur(6px);
+}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 3px rgba(79,209,224,.16)}
+.hero h1{
+  margin:24px 0 0;font-size:clamp(34px,4.9vw,68px);line-height:1.06;
+  font-weight:680;letter-spacing:-.022em;
+  background:linear-gradient(180deg,#ffffff 18%,#b9c4e6 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.lede{margin:22px 0 0;font-size:clamp(15.5px,1.35vw,18.5px);line-height:1.78;color:var(--fg-2);max-width:760px}
+.lede b{color:var(--fg);font-weight:560}
+.stats{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));
+  gap:1px;margin:38px 0 0;border:1px solid var(--line);border-radius:var(--r-md);
+  background:var(--line);overflow:hidden;
+}
+.stat{background:rgba(9,13,24,.72);padding:16px 20px}
+.stat b{display:block;font-size:19px;font-weight:640;letter-spacing:-.01em;color:#fff}
+.stat span{display:block;margin-top:3px;font-size:13px;color:var(--fg-3);line-height:1.6}
+.cta-row{display:flex;flex-wrap:wrap;gap:12px;margin:34px 0 0}
+.fineprint{
+  margin:26px 0 0;font-size:12.8px;color:var(--fg-3);line-height:1.75;
+  padding-left:13px;border-left:2px solid rgba(91,124,250,.5);max-width:660px;
+}
+
+/* ============================================================
+   通用区块
+   ============================================================ */
+.sec{padding:104px 0;position:relative}
+.sec + .sec{border-top:1px solid rgba(255,255,255,.05)}
+.sec-head{max-width:760px;margin-bottom:52px}
+.eyebrow{
+  font-size:12.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  color:transparent;background:linear-gradient(90deg,var(--blue),var(--violet));
+  -webkit-background-clip:text;background-clip:text;
+}
+.sec-head h2{margin:14px 0 0;font-size:clamp(26px,3.1vw,38px);line-height:1.22;font-weight:660;letter-spacing:-.018em}
+.sec-head .sub{margin:16px 0 0;color:var(--fg-2);font-size:15.5px}
+
+.card{
+  position:relative;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r-lg);padding:26px 24px;
+  transition:transform .24s var(--ease),border-color .24s var(--ease),background .24s var(--ease);
+}
+.card::before{
+  content:"";position:absolute;top:0;left:18px;right:18px;height:1px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);opacity:.55;
+}
+.card:hover{transform:translateY(-3px);border-color:var(--line-2);background:rgba(255,255,255,.042)}
+.grid{display:grid;gap:20px}
+/* min() 兜底：轨道最小宽度不得超过容器，否则窄屏会横向溢出 */
+.grid-3{grid-template-columns:repeat(auto-fit,minmax(min(288px,100%),1fr))}
+.grid-6{grid-template-columns:repeat(auto-fit,minmax(min(304px,100%),1fr))}
+.grid-2{grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))}
+
+/* 为什么自己做 */
+.why-card h3{font-size:17.5px;font-weight:620;margin:14px 0 0;line-height:1.5}
+.why-card p{margin:11px 0 0;color:var(--fg-2);font-size:14.5px;line-height:1.8}
+.num{
+  display:inline-block;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;
+  letter-spacing:.1em;color:var(--blue);padding:3px 9px;border-radius:7px;
+  background:rgba(91,124,250,.12);border:1px solid rgba(91,124,250,.26);
+}
+
+/* 核心能力 */
+.cap h3{font-size:16.5px;font-weight:620;margin:16px 0 0}
+.cap p{margin:10px 0 0;color:var(--fg-2);font-size:14.2px;line-height:1.78}
+.cap-ico{
+  width:42px;height:42px;border-radius:12px;display:grid;place-items:center;
+  background:linear-gradient(150deg,rgba(91,124,250,.2),rgba(157,107,255,.13));
+  border:1px solid rgba(255,255,255,.11);
+}
+.cap-ico svg{width:21px;height:21px;stroke:#c3cdff;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tag{
+  display:inline-block;margin-top:14px;font-size:11.5px;color:var(--fg-3);
+  font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em;
+  border:1px solid var(--line);border-radius:999px;padding:3px 10px;
+}
+
+/* ============================================================
+   架构图
+   ============================================================ */
+.arch-box{
+  border:1px solid var(--line);border-radius:var(--r-lg);
+  background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012));
+  padding:26px 20px;overflow:hidden;
+}
+.arch-box svg{width:100%;height:auto;display:block}
+.dg-node{fill:rgba(255,255,255,.035);stroke:rgba(255,255,255,.13);stroke-width:1}
+.dg-node-a{fill:rgba(91,124,250,.13);stroke:rgba(91,124,250,.45);stroke-width:1}
+.dg-node-b{fill:rgba(157,107,255,.1);stroke:rgba(157,107,255,.36);stroke-width:1}
+.dg-chip{fill:rgba(255,255,255,.055);stroke:rgba(255,255,255,.1);stroke-width:1}
+.dg-t{fill:#eef1fb;font-size:15.5px;font-weight:640;font-family:inherit}
+.dg-s{fill:#98a3bb;font-size:12px;font-family:inherit}
+.dg-c{fill:#cbd4ea;font-size:12px;font-family:inherit}
+.dg-l{fill:#7c879f;font-size:11.5px;font-family:inherit}
+.dg-link{stroke:rgba(120,140,220,.55);stroke-width:1.4;fill:none}
+.arch-notes{margin-top:24px;grid-template-columns:repeat(auto-fit,minmax(min(400px,100%),1fr))}
+.note{display:flex;gap:12px;font-size:14.2px;color:var(--fg-2);line-height:1.8;padding:16px 18px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--panel)}
+.note b{color:var(--fg);font-weight:600}
+.note-ic{flex:0 0 auto;width:20px;height:20px;margin-top:2px;color:var(--blue)}
+.note-ic svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ============================================================
+   界面截图
+   ============================================================ */
+.shots{display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(min(400px,100%),1fr))}
+.shot{margin:0}
+.shot-btn{
+  display:block;width:100%;padding:0;border:1px solid var(--line);border-radius:var(--r-md);
+  background:#0a0e1a;overflow:hidden;cursor:zoom-in;position:relative;
+  transition:transform .24s var(--ease),border-color .24s var(--ease),box-shadow .24s var(--ease);
+}
+.shot-btn:hover{transform:translateY(-3px);border-color:var(--line-2);box-shadow:0 22px 46px -26px rgba(0,0,0,.95)}
+.shot-btn img{width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;object-position:top center;transition:transform .5s var(--ease)}
+/* 后两张是 1600×2200 的整页长截图，用竖版比例预览，其余内容交给灯箱 */
+.shot-tall .shot-btn img{aspect-ratio:4/5}
+.shot-btn:hover img{transform:scale(1.018)}
+.shot-btn:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+.shot-btn::after{
+  content:"点击放大";position:absolute;right:12px;bottom:12px;font-size:11.5px;color:#dfe5f7;
+  padding:4px 10px;border-radius:999px;background:rgba(10,14,26,.78);
+  border:1px solid var(--line-2);opacity:0;transition:opacity .2s var(--ease);
+}
+.shot-btn:hover::after{opacity:1}
+.shot figcaption{margin-top:13px;font-size:13.5px;color:var(--fg-3);line-height:1.72}
+.shot figcaption b{color:var(--fg-2);font-weight:600}
+
+/* 灯箱 */
+.lightbox{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:26px}
+.lightbox[hidden]{display:none}
+.lb-backdrop{position:absolute;inset:0;background:rgba(4,6,12,.86);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:zoom-out;animation:fade .22s var(--ease)}
+.lb-frame{
+  position:relative;margin:0;max-width:min(1500px,94vw);max-height:90vh;
+  display:flex;flex-direction:column;gap:12px;animation:pop .26s var(--ease);
+}
+.lb-frame img{
+  max-width:100%;max-height:calc(90vh - 90px);width:auto;margin:0 auto;object-fit:contain;
+  border-radius:var(--r-md);border:1px solid var(--line-2);background:#0a0e1a;
+  box-shadow:0 40px 90px -30px rgba(0,0,0,.95);
+}
+.lb-frame figcaption{font-size:13.5px;color:var(--fg-2);text-align:center;padding:0 10px}
+.lb-close{
+  position:absolute;top:-46px;right:0;width:36px;height:36px;border-radius:10px;cursor:pointer;
+  background:rgba(255,255,255,.08);border:1px solid var(--line-2);color:var(--fg);
+  font-size:15px;line-height:1;display:grid;place-items:center;
+}
+.lb-close:hover{background:rgba(255,255,255,.16)}
+body.locked{overflow:hidden}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:scale(.975) translateY(8px)}to{opacity:1;transform:none}}
+
+/* ============================================================
+   成片 / 难点 / 文档 / 页脚
+   ============================================================ */
+.film{
+  border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;
+  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.012));
+  padding:16px;
+}
+.film video{width:100%;height:auto;border-radius:var(--r-md);background:#05070d;aspect-ratio:16/9}
+.film-cap{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:baseline;padding:16px 6px 4px}
+.film-cap p{font-size:13.6px;color:var(--fg-3)}
+.film-cap strong{color:var(--fg-2);font-weight:600;font-size:14.4px}
+
+.trouble{
+  display:grid;grid-template-columns:56px 1fr;gap:20px;
+  padding:24px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel);
+  transition:border-color .24s var(--ease),background .24s var(--ease);
+}
+.trouble:hover{border-color:var(--line-2);background:rgba(255,255,255,.04)}
+.trouble-idx{
+  font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:var(--violet);
+  padding-top:3px;letter-spacing:.06em;
+}
+.trouble h3{font-size:16.5px;font-weight:620;line-height:1.55;margin-bottom:16px}
+.trouble dl{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));margin:0}
+.trouble dt{
+  font-size:11.5px;letter-spacing:.1em;color:var(--fg-3);font-weight:600;
+  display:flex;align-items:center;gap:7px;margin-bottom:6px;
+}
+.trouble dt::before{content:"";width:13px;height:2px;border-radius:2px;background:var(--blue)}
+.trouble dl > div:nth-child(2) dt::before{background:var(--violet)}
+.trouble dl > div:nth-child(3) dt::before{background:var(--cyan)}
+.trouble dd{margin:0;font-size:14px;color:var(--fg-2);line-height:1.78}
+.trouble dd code{
+  font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.6px;color:#d6dcf2;
+  background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:6px;padding:1px 6px;
+}
+
+.docs{
+  display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));
+  align-items:start;
+}
+.docs-main{border:1px solid var(--line);border-radius:var(--r-lg);padding:28px 26px;background:linear-gradient(180deg,rgba(91,124,250,.09),rgba(255,255,255,.015))}
+.docs-main h3{font-size:19px;font-weight:640}
+.docs-main p{margin:13px 0 0;color:var(--fg-2);font-size:14.5px;line-height:1.82}
+.kv{margin:20px 0 0;display:grid;gap:10px}
+.kv li{display:flex;gap:11px;font-size:13.8px;color:var(--fg-2);line-height:1.72}
+.kv li span{flex:0 0 auto;color:var(--cyan);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;padding-top:2px}
+.docs-side{display:grid;gap:20px}
+.statcard{border:1px solid var(--line);border-radius:var(--r-lg);padding:22px 24px;background:var(--panel)}
+.statcard b{display:block;font-size:26px;font-weight:660;letter-spacing:-.02em;
+  background:linear-gradient(120deg,#9fb4ff,#c9a6ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.statcard span{display:block;margin-top:2px;font-size:13.4px;color:var(--fg-3);line-height:1.7}
+
+.footer{border-top:1px solid rgba(255,255,255,.06);padding:44px 0 54px;margin-top:8px}
+.footer-in{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:center;justify-content:space-between}
+.footer p{font-size:13.2px;color:var(--fg-3)}
+.footer .sep{opacity:.45;margin:0 8px}
+
+/* ============================================================
+   滚动淡入
+   ============================================================ */
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.reveal.in{opacity:1;transform:none}
+.d1{transition-delay:.06s}.d2{transition-delay:.12s}.d3{transition-delay:.18s}
+.d4{transition-delay:.24s}.d5{transition-delay:.3s}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .reveal{opacity:1;transform:none;transition:none}
+  *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+}
+
+/* ============================================================
+   响应式
+   ============================================================ */
+@media (max-width:1180px){
+  .nav-links a{padding:7px 9px;font-size:13px}
+  .brand span{font-size:15px}
+}
+/* 首屏 <980px 退回单栏：文案在上，竖屏面板居中放到下方 */
+@media (max-width:979px){
+  .hero-inner{grid-template-columns:1fr;gap:40px;justify-items:stretch}
+  .hero-reel{width:100%;gap:12px}
+  .reel-frame{width:min(320px,70vw)}
+  .reel-cap{max-width:min(340px,90vw)}
+}
+@media (max-width:980px){
+  .wrap{padding:0 22px}
+  .sec{padding:82px 0}
+  .hero{padding:calc(var(--nav-h) + 64px) 0 74px}
+  .sec-head{margin-bottom:40px}
+}
+@media (max-width:860px){
+  .nav-links{display:none}
+  .nav-in{gap:14px;justify-content:space-between}
+  .nav .btn-sm{margin-left:auto}
+  .shots{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  body{font-size:15.3px}
+  .wrap{padding:0 18px}
+  .sec{padding:68px 0}
+  .card{padding:22px 19px;border-radius:var(--r-md)}
+  .arch-box{padding:16px 10px;border-radius:var(--r-md)}
+  .stats{border-radius:var(--r-md)}
+  .stat{padding:14px 16px}
+  .cta-row{flex-direction:column;align-items:stretch}
+  .cta-row .btn{width:100%}
+  .trouble{grid-template-columns:1fr;gap:12px;padding:20px 18px}
+  .trouble-idx{padding-top:0}
+  .trouble dl{grid-template-columns:1fr}
+  .lightbox{padding:14px}
+  .lb-frame{max-width:100%}
+  .lb-close{top:-40px;right:0;width:32px;height:32px}
+  .film{padding:11px;border-radius:var(--r-md)}
+  .reel-frame{width:min(260px,62vw)}
+  .reel-cap{max-width:min(320px,88vw)}
+  .footer-in{flex-direction:column;align-items:flex-start}
+}
+@media (max-width:400px){
+  .brand span{display:none}
+  .stat b{font-size:17.5px}
+}
+@media print{
+  .nav,.hero-reel,#glow{display:none}
+  body{background:#fff;color:#000}
+}
+</style>
+</head>
+<body>
+
+<div id="glow" aria-hidden="true"></div>
+
+<!-- ============================ 顶部导航 ============================ -->
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top" aria-label="回到顶部">
+      <img src="./assets/app-icon.png" alt="本地数字人工作台图标" width="28" height="28">
+      <span>本地数字人工作台</span>
+    </a>
+    <nav class="nav-links" aria-label="页面导航">
+      <a href="#capabilities">核心能力</a>
+      <a href="#arch">架构</a>
+      <a href="#ui">界面</a>
+      <a href="#films">成片</a>
+      <a href="#challenges">工程难点</a>
+    </nav>
+    <a class="btn btn-primary btn-sm" href="./demo/index.html" target="_blank" rel="noopener">打开在线演示 →</a>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ============================ Hero ============================ -->
+<section class="hero">
+  <div class="hero-veil" aria-hidden="true"></div>
+
+  <div class="wrap hero-inner">
+    <div class="hero-copy">
+      <p class="pill"><span class="dot" aria-hidden="true"></span>本地推理 · 单机全流程 · 2026</p>
+      <h1>本地数字人工作台</h1>
+      <p class="lede">
+        一句文案进，4K 数字人短视频出 —— <b>语音克隆、口型同步、字幕对齐、B-roll 包装</b>全流程跑在一台
+        <b>RTX 3080</b> 上，不依赖任何云端服务。
+      </p>
+
+      <div class="stats">
+        <div class="stat"><b>6,900+</b><span>行后端代码 · 0 个第三方后端依赖</span></div>
+        <div class="stat"><b>0 元</b><span>云端成本 · 数据不出本机</span></div>
+        <div class="stat"><b>4K &amp; 2K</b><span>导出 · 整夜排队生成</span></div>
+      </div>
+
+      <div class="cta-row">
+        <a class="btn btn-primary btn-lg" href="./demo/index.html" target="_blank" rel="noopener">打开在线演示（可点界面）<span aria-hidden="true">→</span></a>
+        <a class="btn btn-ghost btn-lg" href="#films">先看成片</a>
+      </div>
+
+      <p class="fineprint">
+        在线演示是<strong>脱敏假数据 + 真实前端界面</strong>；真实生成能力需要 Windows + NVIDIA 显卡在本机运行。
+      </p>
+    </div>
+
+    <div class="hero-reel">
+      <div class="reel-frame">
+        <video src="./assets/hero.mp4" poster="./assets/hero-poster.jpg"
+               muted loop playsinline autoplay preload="metadata" disablepictureinpicture
+               aria-label="数字人竖版成片片段"></video>
+      </div>
+      <p class="reel-cap">竖版成片 · 9:16 · 字幕与标题由 ASS 烧入画面</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 为什么自己做 ============================ -->
+<section class="sec" id="why">
+  <div class="wrap">
+    <header class="sec-head reveal">
+      <p class="eyebrow">Why build it</p>
+      <h2>为什么不直接买 SaaS</h2>
+      <p class="sub">三个理由，决定了这套东西必须落在本机。</p>
+    </header>
+
+    <div class="grid grid-3">
+      <article class="card why-card reveal">
+        <span class="num">01</span>
+        <h3>按分钟计费，长视频成本失控</h3>
+        <p>数字人 SaaS 普遍按合成时长收费，一条十分钟的成片就要反复扣费；改一版文案、重录一句口播都得重新计费。本机推理的边际成本只有电费。</p>
+      </article>
+      <article class="card why-card reveal d1">
+        <span class="num">02</span>
+        <h3>真人形象与声音必须留在本地</h3>
+        <p>克隆素材是生物特征级数据。上传第三方平台意味着失去控制权，也无法向素材本人交代。整套模型、音视频与中间产物都只存在于本机磁盘。</p>
+      </article>
+      <article class="card why-card reveal d2">
+        <span class="num">03</span>
+        <h3>批量出片要能整夜排队</h3>
+        <p>真实场景是晚上丢进十条任务、第二天早上收片。所以队列必须支持断点续跑、暂停与取消，中途失败不能把已完成的部分全部作废。</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 核心能力 ============================ -->
+<section class="sec" id="capabilities">
+  <div class="wrap">
+    <header class="sec-head reveal">
+      <p class="eyebrow">Capabilities</p>
+      <h2>六块能力，全部在本机跑完</h2>
+      <p class="sub">从一段文案到一条带包装的成片，中间没有一步依赖外部服务。</p>
+    </header>
+
+    <div class="grid grid-6">
+      <article class="card cap reveal">
+        <div class="cap-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12h2.2l1.8-6 3 12 2.6-8.4L14.4 15l1.4-3h5.2"/></svg></div>
+        <h3>双声音引擎</h3>
+        <p>IndexTTS-2 / VoxCPM2 本地克隆，同一时刻只启一个；切换引擎时自动停旧进程再启新进程，避免两个模型同时占显存。</p>
+        <span class="tag">IndexTTS-2 · VoxCPM2</span>
+      </article>
+
+      <article class="card cap reveal d1">
+        <div class="cap-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5h16M4 12h11M4 17.5h13"/><circle cx="18.5" cy="17.5" r="2.2"/></svg></div>
+        <h3>字幕逐字对齐</h3>
+        <p>faster-whisper large-v3-turbo 先出词级时间戳，再与原始文案做 difflib 锚定，同音错字不会污染时间轴。实测 407 秒音频 29 秒对齐完。</p>
+        <span class="tag">词级时间戳 + difflib 锚定</span>
+      </article>
+
+      <article class="card cap reveal d2">
+        <div class="cap-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5c2.4 5.4 13.6 5.4 16 0"/><path d="M4 10.5h16"/></svg></div>
+        <h3>口型同步</h3>
+        <p>独立子进程跑口型模型，与主服务解耦；输入先压到 1920 长边控制显存与耗时，导出阶段再 lanczos 放大回 2K / 4K。</p>
+        <span class="tag">1920 长边 → lanczos 放大</span>
+      </article>
+
+      <article class="card cap reveal d3">
+        <div class="cap-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.4"/><circle cx="8.4" cy="9.6" r="1.5"/><path d="M20.4 16.2 15.6 11.4l-5.4 5.4-1.8-1.8-4.8 4.8"/></svg></div>
+        <h3>智能 B-roll</h3>
+        <p>用 CLIP 图像特征与 bge 中文文本向量做跨模态检索，按字幕时间轴自动匹配分镜素材，无需手工挑镜头。</p>
+        <span class="tag">CLIP + bge 跨模态检索</span>
+      </article>
+
+      <article class="card cap reveal d4">
+        <div class="cap-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4.2" rx="1.6"/><rect x="3" y="9.9" width="18" height="4.2" rx="1.6"/><rect x="3" y="15.8" width="11.5" height="4.2" rx="1.6"/></svg></div>
+        <h3>任务队列</h3>
+        <p>文案分段合成、断点续跑、暂停 / 取消 / 删除；删掉正在运行的任务也会正确落库，不会留下幽灵记录或孤儿进程。</p>
+        <span class="tag">分段 · 续跑 · 暂停 / 取消</span>
+      </article>
+
+      <article class="card cap reveal d5">
+        <div class="cap-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.2 20 7.6v8.8L12 20.8 4 16.4V7.6z"/><path d="M4 7.6 12 12l8-4.4M12 12v8.8"/></svg></div>
+        <h3>交付工程化</h3>
+        <p>Inno Setup 安装器 + 离线组件包，内嵌嵌入式 Python；非技术同事双击装完即可使用，目标机不需要预装任何开发环境。</p>
+        <span class="tag">Inno Setup · 离线组件包</span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 架构 ============================ -->
+<section class="sec" id="arch">
+  <div class="wrap">
+    <header class="sec-head reveal">
+      <p class="eyebrow">Architecture</p>
+      <h2>一条直线到底的数据流</h2>
+      <p class="sub">浏览器只负责界面，server.py 负责一切调度，模型各自活在独立进程里。</p>
+    </header>
+
+    <div class="arch-box reveal">
+      <svg viewBox="0 0 1000 462" role="img" aria-label="数据流图：浏览器单页调用 server.py，server.py 调度本地模型进程，最终产出 4K 成片与自动封面">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+            <path d="M0 1 L9.2 5 L0 9 z" fill="#5b7cfa"></path>
+          </marker>
+          <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#5b7cfa" stop-opacity=".26"></stop>
+            <stop offset="1" stop-color="#9d6bff" stop-opacity=".14"></stop>
+          </linearGradient>
+        </defs>
+
+        <!-- 1. 浏览器单页 -->
+        <rect class="dg-node" x="330" y="20" width="340" height="60" rx="15"></rect>
+        <text class="dg-t" x="500" y="45" text-anchor="middle">浏览器单页</text>
+        <text class="dg-s" x="500" y="65" text-anchor="middle">原生 JS · 无构建 · 无第三方运行时</text>
+
+        <line class="dg-link" x1="500" y1="80" x2="500" y2="112" marker-end="url(#ar)"></line>
+        <text class="dg-l" x="512" y="101">HTTP / JSON</text>
+
+        <!-- 2. server.py -->
+        <rect x="180" y="114" width="640" height="106" rx="17" fill="url(#lg1)" stroke="rgba(91,124,250,.42)"></rect>
+        <text class="dg-t" x="500" y="142" text-anchor="middle">server.py</text>
+        <text class="dg-s" x="500" y="162" text-anchor="middle">Python 标准库 http.server · 全部 API 与任务队列都在这里</text>
+        <rect class="dg-chip" x="200" y="176" width="192" height="28" rx="8"></rect>
+        <text class="dg-c" x="296" y="194" text-anchor="middle">REST 路由 · 静态托管</text>
+        <rect class="dg-chip" x="404" y="176" width="192" height="28" rx="8"></rect>
+        <text class="dg-c" x="500" y="194" text-anchor="middle">分段合成任务队列</text>
+        <rect class="dg-chip" x="608" y="176" width="192" height="28" rx="8"></rect>
+        <text class="dg-c" x="704" y="194" text-anchor="middle">ffmpeg 调度与续跑</text>
+
+        <!-- 3. 扇出到本地模型进程 -->
+        <path class="dg-link" d="M500 220 L500 244 L118 244 L118 266" marker-end="url(#ar)"></path>
+        <path class="dg-link" d="M500 220 L500 244 L309 244 L309 266" marker-end="url(#ar)"></path>
+        <path class="dg-link" d="M500 220 L500 266" marker-end="url(#ar)"></path>
+        <path class="dg-link" d="M500 220 L500 244 L691 244 L691 266" marker-end="url(#ar)"></path>
+        <path class="dg-link" d="M500 220 L500 244 L882 244 L882 266" marker-end="url(#ar)"></path>
+
+        <rect class="dg-node-b" x="30" y="268" width="176" height="66" rx="14"></rect>
+        <text class="dg-t" x="118" y="293" text-anchor="middle" style="font-size:14px">IndexTTS-2</text>
+        <text class="dg-s" x="118" y="313" text-anchor="middle" style="font-size:11.4px">声音克隆引擎 A</text>
+
+        <rect class="dg-node-b" x="221" y="268" width="176" height="66" rx="14"></rect>
+        <text class="dg-t" x="309" y="293" text-anchor="middle" style="font-size:14px">VoxCPM2</text>
+        <text class="dg-s" x="309" y="313" text-anchor="middle" style="font-size:11.4px">声音克隆引擎 B</text>
+
+        <rect class="dg-node-b" x="412" y="268" width="176" height="66" rx="14"></rect>
+        <text class="dg-t" x="500" y="293" text-anchor="middle" style="font-size:14px">hdModule</text>
+        <text class="dg-s" x="500" y="313" text-anchor="middle" style="font-size:11.4px">口型同步子进程</text>
+
+        <rect class="dg-node-b" x="603" y="268" width="176" height="66" rx="14"></rect>
+        <text class="dg-t" x="691" y="290" text-anchor="middle" style="font-size:13.4px">faster-whisper</text>
+        <text class="dg-s" x="691" y="311" text-anchor="middle" style="font-size:11.4px">词级时间戳对齐</text>
+
+        <rect class="dg-node-b" x="794" y="268" width="176" height="66" rx="14"></rect>
+        <text class="dg-t" x="882" y="290" text-anchor="middle" style="font-size:13.4px">CLIP + BGE</text>
+        <text class="dg-s" x="882" y="311" text-anchor="middle" style="font-size:11.4px">B-roll 语义检索</text>
+
+        <!-- 4. 汇聚到产物 -->
+        <path class="dg-link" d="M118 334 L118 362 L500 362 L500 388" marker-end="url(#ar)"></path>
+        <path class="dg-link" d="M500 334 L500 388" marker-end="url(#ar)"></path>
+        <path class="dg-link" d="M882 334 L882 362 L500 362"></path>
+
+        <rect class="dg-node-a" x="270" y="390" width="460" height="62" rx="15"></rect>
+        <text class="dg-t" x="500" y="416" text-anchor="middle">4K 成片 + 自动封面</text>
+        <text class="dg-s" x="500" y="436" text-anchor="middle">2K 可选 · 整夜排队产出 · 全程不出本机</text>
+      </svg>
+    </div>
+
+    <div class="grid grid-2 arch-notes">
+      <div class="note reveal">
+        <span class="note-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 8l7-5 7 5"/></svg></span>
+        <p><b>为什么不用框架。</b>安装包里的嵌入式 Python 只有标准库，目标机上没有 npm、也没有任何构建工具链。因此后端只用标准库，前端保持零构建步骤 —— 打开文件即运行，部署面最小。</p>
+      </div>
+      <div class="note reveal d1">
+        <span class="note-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
+        <p><b>为什么模型都在子进程。</b>声音克隆与口型模型的依赖版本互相冲突，且崩溃会带走主进程。放进独立子进程后，主服务只通过文件与退出码通信，一个模型挂掉不影响队列整体。</p>
+      </div>
+      <div class="note reveal d2">
+        <span class="note-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.6V12l3 1.8"/></svg></span>
+        <p><b>为什么显存要串行。</b>10GB 显存装不下两个模型同时驻留。声音合成结束后立刻释放，口型任务启动前按可配置阈值等待，宁可慢一点也不 OOM。</p>
+      </div>
+      <div class="note reveal d3">
+        <span class="note-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6.5h16v11H4z"/><path d="M9 17.5v2.5M15 17.5v2.5"/></svg></span>
+        <p><b>为什么产物直接落文件系统。</b>中间产物写盘而不是走内存流，任务中断后可以按分段索引续跑；ffmpeg 只负责最后拼接与封装，不参与模型推理。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 界面 ============================ -->
+<section class="sec" id="ui">
+  <div class="wrap">
+    <header class="sec-head reveal">
+      <p class="eyebrow">Interface</p>
+      <h2>真实界面，不是效果图</h2>
+      <p class="sub">以下截图来自实际运行的前端，点开可看大图（Esc 或点击遮罩关闭）。</p>
+    </header>
+
+    <div class="shots">
+      <figure class="shot reveal">
+        <button class="shot-btn" type="button" data-full="./assets/shot-workbench.jpg"
+                data-cap="工作台 · 文案分段、声音与形象选择、生成参数集中在一屏">
+          <img src="./assets/shot-workbench.jpg" alt="工作台界面截图：文案分段与生成参数配置" loading="lazy" width="1600" height="1000">
+        </button>
+        <figcaption><b>工作台</b> · 文案分段、声音与形象选择、生成参数集中在一屏，提交后直接进队列。</figcaption>
+      </figure>
+
+      <figure class="shot reveal d1">
+        <button class="shot-btn" type="button" data-full="./assets/shot-voices.jpg"
+                data-cap="声音模型 · 本地克隆音色管理，含试听与引擎选择">
+          <img src="./assets/shot-voices.jpg" alt="声音模型界面截图：克隆音色列表与试听" loading="lazy" width="1600" height="1000">
+        </button>
+        <figcaption><b>声音模型</b> · 本地克隆音色的管理与试听，可切换 IndexTTS-2 / VoxCPM2 两套引擎。</figcaption>
+      </figure>
+
+      <figure class="shot reveal d2">
+        <button class="shot-btn" type="button" data-full="./assets/shot-avatars.jpg"
+                data-cap="数字人形象 · 形象库与素材管理">
+          <img src="./assets/shot-avatars.jpg" alt="数字人形象界面截图：形象库列表" loading="lazy" width="1600" height="1000">
+        </button>
+        <figcaption><b>数字人形象</b> · 形象库与素材管理，形象素材同样只保存在本机。</figcaption>
+      </figure>
+
+      <figure class="shot reveal d3">
+        <button class="shot-btn" type="button" data-full="./assets/shot-broll.jpg"
+                data-cap="B-roll 素材面板 · 语义检索与时间轴匹配结果">
+          <img src="./assets/shot-broll.jpg" alt="B-roll 素材面板截图：检索与匹配结果" loading="lazy" width="1600" height="1000">
+        </button>
+        <figcaption><b>B-roll 素材面板</b> · 语义检索结果与字幕时间轴的自动匹配，可人工微调。</figcaption>
+      </figure>
+
+      <figure class="shot shot-tall reveal">
+        <button class="shot-btn" type="button" data-full="./assets/shot-workbench-tall.jpg"
+                data-cap="任务队列 · 整夜排队与失败续跑">
+          <img src="./assets/shot-workbench-tall.jpg" alt="任务队列界面整页截图：每条任务独立记录画质、分辨率与耗时" loading="lazy" width="1600" height="2200">
+        </button>
+        <figcaption><b>任务队列 · 整夜排队与失败续跑</b> · 每条任务独立记录画质 / 分辨率 / 耗时，失败任务不影响后续继续生成。</figcaption>
+      </figure>
+
+      <figure class="shot shot-tall reveal d1">
+        <button class="shot-btn" type="button" data-full="./assets/shot-generating.jpg"
+                data-cap="生成中 · 阶段与进度实时可见">
+          <img src="./assets/shot-generating.jpg" alt="生成中界面整页截图：分段合成、字幕对齐、口型同步与导出各阶段进度" loading="lazy" width="1600" height="2200">
+        </button>
+        <figcaption><b>生成中 · 阶段与进度实时可见</b> · 分段合成语音 → 字幕逐字对齐 → 口型同步 → 导出，阶段名与百分比实时回传。</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 成片 ============================ -->
+<section class="sec" id="films">
+  <div class="wrap">
+    <header class="sec-head reveal">
+      <p class="eyebrow">Output</p>
+      <h2>实际产出</h2>
+      <p class="sub">下面这条是工作台真实生成的成片片段，未做人工剪辑。</p>
+    </header>
+
+    <div class="film reveal">
+      <video src="./assets/full-demo.mp4" poster="./assets/full-demo-poster.jpg"
+             controls preload="metadata" playsinline></video>
+      <div class="film-cap">
+        <strong>完整成片示例 · 60 秒</strong>
+        <p>真实产出：4K 源片压到 720p 便于网页播放；口型、字幕与 B-roll 均为自动生成结果。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 工程难点与解法 ============================ -->
+<section class="sec" id="challenges">
+  <div class="wrap">
+    <header class="sec-head reveal">
+      <p class="eyebrow">Engineering notes</p>
+      <h2>工程难点与解法</h2>
+      <p class="sub">六条真实的坑，每条按「现象 → 定位 → 解法」记录。这些都是单机推理与离线交付才会遇到的问题。</p>
+    </header>
+
+    <div class="grid" style="gap:16px">
+
+      <article class="trouble reveal">
+        <div class="trouble-idx">01</div>
+        <div>
+          <h3>10GB 显存要同时喂声音模型和口型模型</h3>
+          <dl>
+            <div><dt>现象</dt><dd>连续提交多个任务时随机 OOM，两个模型都想常驻显存。</dd></div>
+            <div><dt>定位</dt><dd>声音克隆与口型模型各自持有几百 MB 到数 GB 的显存，并发驻留直接超过 10GB 上限。</dd></div>
+            <div><dt>解法</dt><dd>改成严格串行：声音合成后立即释放显存；口型任务启动前按可配置阈值（默认 <code>6500MB</code>）轮询等待，阈值支持热更新，无需重启服务。</dd></div>
+          </dl>
+        </div>
+      </article>
+
+      <article class="trouble reveal">
+        <div class="trouble-idx">02</div>
+        <div>
+          <h3>对齐子进程莫名卡死</h3>
+          <dl>
+            <div><dt>现象</dt><dd>faster-whisper 对齐进程长时间无输出，父进程 <code>wait()</code> 永不返回，队列停在原地。</dd></div>
+            <div><dt>定位</dt><dd>子进程日志写满了 <code>64KB</code> 的管道缓冲区，父进程又在等它退出、没有读管道 —— 双方互等，典型死锁。</dd></div>
+            <div><dt>解法</dt><dd>子进程 stdout / stderr 一律重定向到日志文件，父进程改为轮询退出码并读文件排查，绝不用 <code>PIPE</code> 却不管它。</dd></div>
+          </dl>
+        </div>
+      </article>
+
+      <article class="trouble reveal">
+        <div class="trouble-idx">03</div>
+        <div>
+          <h3>漏字的字幕块把时间轴压塌</h3>
+          <dl>
+            <div><dt>现象</dt><dd>个别字幕块左右锚点零间隙，某个字符被拉到音频末尾，后面的字幕全部挤压重叠。</dd></div>
+            <div><dt>定位</dt><dd>当识别漏字导致锚点重合时，插值区间长度为 0，按比例分配时间戳就产生 <code>t1 &lt;= t0</code> 的非法区间。</dd></div>
+            <div><dt>解法</dt><dd>在时间戳分配里加保底逻辑：检测到 <code>t1 &lt;= t0</code> 时强制使用正向最小步长，保证时间轴单调递增。</dd></div>
+          </dl>
+        </div>
+      </article>
+
+      <article class="trouble reveal">
+        <div class="trouble-idx">04</div>
+        <div>
+          <h3>pythonw 没有 stderr，队列 worker 裸死</h3>
+          <dl>
+            <div><dt>现象</dt><dd>用 <code>pythonw</code> 启动后队列偶发假死：任务既没完成也没报错，界面一直转圈。</dd></div>
+            <div><dt>定位</dt><dd>无控制台意味着 <code>stderr</code> 不可用，未捕获异常让 worker 线程静默退出，主进程还活着等它。</dd></div>
+            <div><dt>解法</dt><dd>worker 外层加自动重启外壳；同时挂上 <code>threading.excepthook</code>，把未捕获异常落盘到 <code>logs/server-error.log</code>，事后可查。</dd></div>
+          </dl>
+        </div>
+      </article>
+
+      <article class="trouble reveal">
+        <div class="trouble-idx">05</div>
+        <div>
+          <h3>目标机缺 VC++ 运行库，安装还被旧版挡住</h3>
+          <dl>
+            <div><dt>现象</dt><dd>干净机器上嵌入式 Python 起不来，提示缺少运行库；想装官方运行库又被已存在的旧版本拦住。</dd></div>
+            <div><dt>定位</dt><dd>离线环境无法联网补依赖，系统级安装又受旧版本与权限约束，不适合让业务同事处理。</dd></div>
+            <div><dt>解法</dt><dd>提取所需 DLL 随安装包一起分发，装到 venv 里 <code>python.exe</code> 旁边 —— 应用级部署，完全不触碰系统目录。</dd></div>
+          </dl>
+        </div>
+      </article>
+
+      <article class="trouble reveal">
+        <div class="trouble-idx">06</div>
+        <div>
+          <h3>OpenCV 5.x 删掉了 <code>cv2.CascadeClassifier</code></h3>
+          <dl>
+            <div><dt>现象</dt><dd>自动封面生成整段崩溃，报 <code>AttributeError</code>，但视频合成本身是成功的。</dd></div>
+            <div><dt>定位</dt><dd>OpenCV 5.x 移除了 <code>cv2.CascadeClassifier</code>，而封面逻辑依赖它做人脸定位。</dd></div>
+            <div><dt>解法</dt><dd>依赖钉死版本 <code>4.12.0.88</code>，并在离线组件包里锁定同一版本，避免环境漂移再次触发。</dd></div>
+          </dl>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 文档与仓库 ============================ -->
+<section class="sec" id="docs">
+  <div class="wrap">
+    <header class="sec-head reveal">
+      <p class="eyebrow">Docs &amp; repo</p>
+      <h2>项目说明书与源码</h2>
+      <p class="sub">这个项目有 176 行 AGENTS.md，专门记录那些「重新踩一遍要花一天」的决定。</p>
+    </header>
+
+    <div class="docs">
+      <div class="docs-main reveal">
+        <h3><span class="mono">AGENTS.md</span> · 176 行项目说明书</h3>
+        <p>面向后续维护者（以及 AI 协作者）写的第一手资料。不写愿景，只写约束与结论，让下一个人不用重新试错。</p>
+        <ul class="kv">
+          <li><span>路径</span>嵌入式 Python、venv、模型目录与产物目录的解析顺序，以及为什么不能用相对路径猜。</li>
+          <li><span>显存</span>串行策略、等待阈值的位置与热更新方式。默认 <code>6500MB</code> 的由来。</li>
+          <li><span>进程</span>子进程日志一律落文件的约定，以及 worker 自动重启与异常落盘的边界。</li>
+          <li><span>依赖</span>需要钉版本的包（如 OpenCV 4.12.0.88）与理由，避免升级即崩。</li>
+          <li><span>决策</span>为什么后端只用标准库、前端不上构建工具，以及被否决的替代方案。</li>
+        </ul>
+      </div>
+
+      <div class="docs-side">
+        <div class="statcard reveal d1">
+          <b>6,900+</b><span>行后端代码，0 个第三方后端依赖，只用 Python 标准库</span>
+        </div>
+        <div class="statcard reveal d2">
+          <b>0 元</b><span>云端成本。模型、素材与产物全程留在本机磁盘</span>
+        </div>
+        <div class="card reveal d3">
+          <p style="color:var(--fg-2);font-size:14.2px;line-height:1.8">
+            在线演示是脱敏数据 + 真实前端界面，可以直接点；真实生成能力需要 Windows + NVIDIA 显卡在本机运行。
+          </p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:18px">
+            <a class="btn btn-ghost btn-sm" href="./demo/index.html" target="_blank" rel="noopener">打开在线演示 →</a>
+            <!-- 仓库地址只在下面这一处维护；把 REPO_URL 换成真实地址，按钮会自动变成可点链接。
+                 没换之前按钮显示「源码仓库 · 待公开」且不可点，避免面试官点到 404。 -->
+            <a class="btn btn-ghost btn-sm" id="repoLink" data-repo="https://github.com/你的用户名/LocalDigitalHuman"
+               href="#" aria-disabled="true">源码仓库 · 待公开</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============================ 页脚 ============================ -->
+<footer class="footer">
+  <div class="wrap footer-in">
+    <p>© 2026 本地数字人工作台<span class="sep">·</span>在线演示为脱敏数据</p>
+    <p>
+      联系方式见简历与邮件<span class="sep">·</span>Windows + NVIDIA 显卡本地运行
+    </p>
+  </div>
+</footer>
+
+<!-- ============================ 灯箱 ============================ -->
+<div class="lightbox" id="lightbox" hidden>
+  <div class="lb-backdrop" data-close></div>
+  <figure class="lb-frame" role="dialog" aria-modal="true" aria-label="界面截图预览">
+    <button class="lb-close" type="button" data-close aria-label="关闭预览">✕</button>
+    <img id="lb-img" src="" alt="">
+    <figcaption id="lb-cap"></figcaption>
+  </figure>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- 滚动淡入 ---------- */
+  var items = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) {
+    Array.prototype.forEach.call(items, function (el) { el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { rootMargin: '0px 0px -12% 0px', threshold: 0.08 });
+    Array.prototype.forEach.call(items, function (el) { io.observe(el); });
+  }
+
+  /* ---------- 导航当前区块高亮 ---------- */
+  var links = Array.prototype.slice.call(document.querySelectorAll('.nav-links a'));
+  var sections = links
+    .map(function (a) { return document.querySelector(a.getAttribute('href')); })
+    .filter(Boolean);
+  if (sections.length && 'IntersectionObserver' in window) {
+    var spy = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        links.forEach(function (a) {
+          a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id);
+        });
+      });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    sections.forEach(function (s) { spy.observe(s); });
+  }
+
+  /* ---------- 截图灯箱 ---------- */
+  var lb = document.getElementById('lightbox');
+  var lbImg = document.getElementById('lb-img');
+  var lbCap = document.getElementById('lb-cap');
+  var lastFocus = null;
+
+  function open(btn) {
+    lastFocus = btn;
+    var img = btn.querySelector('img');
+    lbImg.src = btn.getAttribute('data-full');
+    lbImg.alt = img ? img.alt : '界面截图';
+    lbCap.textContent = btn.getAttribute('data-cap') || '';
+    lb.hidden = false;
+    document.body.classList.add('locked');
+    lb.querySelector('.lb-close').focus();
+  }
+
+  function close() {
+    lb.hidden = true;
+    lbImg.removeAttribute('src');
+    document.body.classList.remove('locked');
+    if (lastFocus) { lastFocus.focus(); lastFocus = null; }
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.shot-btn'), function (btn) {
+    btn.addEventListener('click', function () { open(btn); });
+  });
+  Array.prototype.forEach.call(lb.querySelectorAll('[data-close]'), function (el) {
+    el.addEventListener('click', close);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !lb.hidden) close();
+  });
+
+  /* ---------- 首屏竖版视频兜底：省流模式或自动播放被拒时保留封面 ---------- */
+  var hero = document.querySelector('.reel-frame video');
+  if (hero) {
+    var p = hero.play();
+    if (p && typeof p.catch === 'function') { p.catch(function () { /* 保留 poster */ }); }
+  }
+
+  /* ---------- 源码仓库按钮：只在填了真实地址后才可点 ---------- */
+  var repo = document.getElementById('repoLink');
+  if (repo) {
+    var url = repo.getAttribute('data-repo') || '';
+    if (/^https?:\/\//.test(url) && url.indexOf('你的用户名') === -1) {
+      repo.setAttribute('href', url);
+      repo.setAttribute('target', '_blank');
+      repo.setAttribute('rel', 'noopener');
+      repo.removeAttribute('aria-disabled');
+      repo.textContent = '查看源码仓库 →';
+    } else {
+      repo.setAttribute('title', '仓库即将公开：把 index.html 里 REPO_URL 换成真实地址即可启用');
+    }
+  }
+})();
+</script>
+
+<noscript>
+  <style>.reveal{opacity:1;transform:none}</style>
+</noscript>
+
+</body>
+</html>

@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>本地数字人工作台</title>
+  <link rel="icon" href="/assets/app-icon.png?v=20260817-3" type="image/png">
+  <link rel="stylesheet" href="/styles.css?v=20260817-4">
+</head>
+<body>
+  <div class="app-shell workbench-shell">
+    <header class="titlebar workbench-titlebar">
+      <div class="brand">
+        <img class="brand-mark" src="/assets/app-icon.png?v=20260817-3" alt="">
+        <div><span>本地数字人</span><small>创作工作台</small></div>
+      </div>
+      <div class="titlebar-actions">
+        <span class="draft-state" id="draftStatus">草稿已保存</span>
+        <div class="device-status" id="deviceStatus">
+          <span class="status-dot"></span><span>正在检查环境</span>
+        </div>
+        <button type="button" class="theme-toggle" id="themeToggle" aria-label="切换深浅主题" title="切换主题">
+          <span class="theme-sun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg></span><span class="theme-moon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="app-layout workbench-layout">
+      <nav class="steps workbench-nav" aria-label="工作台导航">
+        <button type="button" class="step is-active" data-step="1">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span><span>工作台</span>
+        </button>
+        <button type="button" class="step" data-step="2">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 13a2 2 0 0 0 2-2V7a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0v-4a2 2 0 0 1 2-2"/></svg></span><span>声音模型</span>
+        </button>
+        <button type="button" class="step" data-step="3">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg></span><span>数字人形象</span>
+        </button>
+        <button type="button" class="step" data-step="5">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></span><span>B-roll 素材</span>
+        </button>
+        <div class="nav-foot">
+          <button type="button" class="text-button nav-setup-button" id="openSetup">组件与下载</button>
+          <span>本地运行</span><small>任务可整夜排队</small>
+        </div>
+      </nav>
+
+      <main class="workspace workbench-workspace">
+        <section class="panel workbench-panel is-active" data-panel="1">
+          <div class="page-heading workbench-heading">
+            <div><h1>数字人工作台</h1><p>完成当前内容后加入队列，后台会自动按顺序生成。</p></div>
+            <div class="heading-status"><span class="status-dot"></span>自动保存草稿</div>
+          </div>
+
+          <div class="workbench-grid">
+            <section class="fluent-card task-editor-card">
+              <div class="card-heading">
+                <div><span class="card-kicker">新任务</span><h2>任务编辑器</h2></div>
+                <button type="button" class="secondary-button compact-button" id="importText">上传文案</button>
+                <input id="textUpload" type="file" accept=".txt,.md,text/plain,text/markdown" hidden>
+              </div>
+              <div id="singleScriptArea">
+                <label class="field-label" for="singleTitle">标题</label>
+                <input id="singleTitle" type="text" maxlength="80" placeholder="输入标题，较长内容会自动分为两行">
+                <div class="editor-label-row">
+                  <label class="field-label" for="scriptText">文案</label><span id="charCount">0 字</span>
+                </div>
+                <textarea id="scriptText" class="workbench-script" placeholder="输入要让数字人讲述的内容……"></textarea>
+              </div>
+              <div id="batchScriptArea" class="is-hidden"></div>
+              <div class="custom-audio-row" id="customAudioRow">
+                <button type="button" class="secondary-button compact-button" id="uploadCustomAudio">上传我的录音</button>
+                <input id="customAudioFile" type="file" accept="audio/mpeg,audio/wav,audio/mp4,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg" hidden>
+                <span class="custom-audio-name" id="customAudioName">可选：自己朗读录成音频上传，直接用你的声音驱动数字人（文案可留空）</span>
+                <audio id="customAudioPreview" controls class="is-hidden custom-audio-preview"></audio>
+              </div>
+
+              <details class="advanced-settings">
+                <summary><span>画面文字与人名条</span><small>字幕、标题颜色、讲师A资料</small></summary>
+                <div class="advanced-settings-body">
+                  <div class="setting-inline">
+                    <span class="field-label">自动字幕</span>
+                    <label class="fluent-switch"><input id="subtitleEnabled" type="checkbox" checked><span></span></label>
+                  </div>
+                  <div class="text-overlay-grid">
+                    <div class="field"><label class="field-label light-label" for="textFont">字体</label>
+                      <select id="textFont"><option value="dongfangdakai" selected>东方大楷</option><option value="yahei">微软雅黑</option><option value="heiti">黑体</option><option value="songti">宋体</option><option value="kaiti">楷体</option><option value="fangsong">仿宋</option></select>
+                    </div>
+                    <div class="field color-field"><label class="field-label light-label" for="titleColorTop">标题上行</label><input id="titleColorTop" type="color" value="#FFFFFF"></div>
+                    <div class="field color-field"><label class="field-label light-label" for="titleColorBottom">标题下行</label><input id="titleColorBottom" type="color" value="#FFE66D"></div>
+                    <div class="field"><label class="field-label light-label" for="textShadow">阴影</label>
+                      <select id="textShadow"><option value="none">无阴影</option><option value="soft">轻柔阴影</option><option value="standard" selected>标准阴影</option><option value="strong">强阴影</option></select>
+                    </div>
+                  </div>
+                  <div class="setting-inline nameplate-toggle-row">
+                    <div><span class="field-label">人名资料</span><small>每15秒显示3秒，带渐入渐出</small></div>
+                    <label class="fluent-switch"><input id="nameplateEnabled" type="checkbox" checked><span></span></label>
+                  </div>
+                  <div class="nameplate-grid">
+                    <div class="field"><label class="field-label light-label" for="speakerName">姓名</label><input id="speakerName" type="text" maxlength="40" value="讲师A"></div>
+                    <div class="field"><label class="field-label light-label" for="speakerDetails">身份信息</label><textarea id="speakerDetails" class="compact-textarea" maxlength="300">注册心理督导师
+高阶心理学导师
+心理学著作作者
+美国催眠协会认证催眠咨询师
+江西卫视心理情感类节目常驻嘉宾</textarea></div>
+                  </div>
+                </div>
+              </details>
+            </section>
+
+            <section class="fluent-card voice-workbench-card">
+              <div class="card-heading">
+                <div><span class="card-kicker">声音</span><h2>声音模型与参数</h2></div>
+                <button type="button" class="text-button" id="changeVoice">管理声音库</button>
+              </div>
+              <div class="voice-workbench-row">
+                <div class="field inspector-select-field">
+                  <label class="field-label" for="voicePersonSelect">人物</label>
+                  <select id="voicePersonSelect"></select>
+                </div>
+                <div class="field inspector-select-field">
+                  <label class="field-label" for="workbenchVoiceSelect">声音模型</label>
+                  <div class="voice-picker-row">
+                    <select id="workbenchVoiceSelect"></select>
+                    <button type="button" class="icon-play-button" id="previewVoice" title="试听声音">▶</button>
+                  </div>
+                  <small id="currentVoiceMeta"></small>
+                </div>
+                <div class="field speed-field compact-speed voice-speed-field">
+                  <div class="range-head"><label class="field-label" for="speed">语速</label><output id="speedValue">1.00×</output></div>
+                  <input id="speed" class="range" type="range" min="0.5" max="2.0" value="1" step="0.05">
+                </div>
+              </div>
+              <audio id="audioPreview" controls class="is-hidden"></audio>
+              <input id="promptAudio" type="hidden"><input id="promptText" type="hidden"><input id="voiceId" type="hidden">
+              <input id="apiKey" type="hidden">
+              <div class="voice-engine-params is-hidden" id="v2VoiceParams">
+                <div class="field speed-field compact-speed">
+                  <div class="range-head"><label class="field-label" for="emotionWeight">情感强度</label><output id="emotionWeightValue">1.0</output></div>
+                  <input id="emotionWeight" class="range" type="range" min="0" max="1" value="1" step="0.05">
+                </div>
+                <div class="field">
+                  <label class="field-label" for="emotionText">情感描述</label>
+                  <input id="emotionText" type="text" maxlength="100" placeholder="选填，如：开心地说 / 平静地叙述">
+                </div>
+              </div>
+              <div class="voice-engine-params is-hidden" id="voxcpmVoiceParams">
+                <div class="field speed-field compact-speed">
+                  <div class="range-head"><label class="field-label" for="cfgValue">贴合度</label><output id="cfgValueValue">2.0</output></div>
+                  <input id="cfgValue" class="range" type="range" min="1" max="5" value="2" step="0.1">
+                </div>
+                <div class="field speed-field compact-speed">
+                  <div class="range-head"><label class="field-label" for="inferenceTimesteps">推理步数</label><output id="inferenceTimestepsValue">10</output></div>
+                  <input id="inferenceTimesteps" class="range" type="range" min="4" max="30" value="10" step="1">
+                  <small>步数越高音质越精细，生成越慢</small>
+                </div>
+              </div>
+              <div class="cloud-workbench-fields is-hidden" id="cloudVoiceFields">
+                <div class="cloud-mode-field">
+                  <label for="workbenchElevenMode">生成模式</label>
+                  <select id="workbenchElevenMode">
+                    <option value="multilingual_v2">Multilingual v2 · 音色稳定</option>
+                    <option value="v3">V3 · 情感优先</option>
+                    <option value="turbo_v2">Eleven Turbo v2 · 快速输出</option>
+                    <option value="v3_voice_match">V3情感＋本人音色</option>
+                  </select>
+                  <small id="workbenchElevenModeHint">中文长文稳定，优先保持本人音色。</small>
+                </div>
+                <div class="cloud-account-field">
+                  <div class="cloud-workbench-head"><label for="workbenchElevenAccount">调用账号 / API</label><button type="button" class="text-button" id="editSelectedCloudVoice">声音参数</button></div>
+                  <select id="workbenchElevenAccount"><option value="">自动选择兼容账号</option></select>
+                  <small id="workbenchElevenAccountHint">选择云端声音后设置本次调用账号</small>
+                </div>
+                <div class="voice-engine-params" id="elevenVoiceParams">
+                  <div class="field speed-field compact-speed">
+                    <div class="range-head"><label class="field-label" for="elevenStability">稳定性</label><output id="elevenStabilityValue">50%</output></div>
+                    <input id="elevenStability" class="range" type="range" min="0" max="100" value="50" step="1">
+                    <small>越低越有表现力，越高越稳定</small>
+                  </div>
+                  <div class="field speed-field compact-speed">
+                    <div class="range-head"><label class="field-label" for="elevenSimilarity">相似度</label><output id="elevenSimilarityValue">90%</output></div>
+                    <input id="elevenSimilarity" class="range" type="range" min="0" max="100" value="90" step="1">
+                  </div>
+                  <div class="field speed-field compact-speed">
+                    <div class="range-head"><label class="field-label" for="elevenStyle">风格强度</label><output id="elevenStyleValue">0%</output></div>
+                    <input id="elevenStyle" class="range" type="range" min="0" max="100" value="0" step="1">
+                  </div>
+                  <div class="setting-inline"><div><span class="field-label">说话者增强</span><small>更贴近原声音，生成稍慢</small></div><label class="fluent-switch"><input id="elevenSpeakerBoost" type="checkbox" checked><span></span></label></div>
+                  <small id="elevenParamsNote"></small>
+                </div>
+              </div>
+            </section>
+
+            <aside class="inspector-column">
+              <section class="fluent-card inspector-card avatar-inspector">
+                <div class="inspector-title"><span>数字人形象</span><button type="button" class="text-button" id="changeAvatar">管理</button></div>
+                <div class="field inspector-select-field">
+                  <label class="field-label" for="avatarPersonSelect">人物</label>
+                  <select id="avatarPersonSelect"></select>
+                </div>
+                <div class="field inspector-select-field">
+                  <label class="field-label" for="workbenchAvatarSelect">形象</label>
+                  <select id="workbenchAvatarSelect"></select>
+                </div>
+                <button type="button" class="selected-avatar-card" id="selectedAvatarCard">
+                  <img id="currentAvatarImage" src="/assets/app-icon.png?v=20260817-3" alt="当前数字人">
+                  <span><strong id="currentAvatarName">正在读取</strong><small id="currentAvatarMeta">随机错帧已开启</small></span>
+                  <i>›</i>
+                </button>
+                <input id="avatarVideo" type="hidden">
+              </section>
+
+              <section class="fluent-card inspector-card output-inspector">
+                <div class="inspector-title"><span>输出设置</span><small>每条任务独立保存</small></div>
+                <div class="choice-row compact-choice" aria-label="生成模式">
+                  <button type="button" class="choice" data-quality="v1">V1 普通</button>
+                  <button type="button" class="choice is-selected" data-quality="v2">V2 高清</button>
+                </div>
+                <div class="choice-row choice-row-three compact-choice" aria-label="输出分辨率">
+                  <button type="button" class="choice" data-resolution="source" id="sourceResolutionChoice">原视频</button>
+                  <button type="button" class="choice" data-resolution="2k">2K</button>
+                  <button type="button" class="choice is-selected" data-resolution="4k">4K</button>
+                </div>
+                <div class="output-path-row">
+                  <input id="outputDir" type="text" readonly>
+                  <button type="button" class="icon-button" data-pick="folder" data-target="outputDir" title="选择保存位置">…</button>
+                </div>
+              </section>
+
+              <section class="fluent-card inspector-card broll-inspector">
+                <div class="setting-inline">
+                  <div><span class="field-label">智能 B-roll 素材</span><small>全屏、静音、自动匹配</small></div>
+                  <label class="fluent-switch"><input id="brollEnabled" type="checkbox"><span></span></label>
+                </div>
+              </section>
+            </aside>
+
+            <section class="fluent-card music-workbench-card">
+              <div class="card-heading music-heading">
+                <div><span class="card-kicker">背景音乐</span><h2>配乐与音量</h2></div>
+                <div class="music-library-head compact-library-head"><span id="musicLibraryCount">0 首</span><button type="button" class="text-button" id="addMusic">上传音乐</button></div>
+                <input id="musicUpload" type="file" accept="audio/mpeg,audio/wav,audio/mp4,audio/aac,audio/flac,audio/ogg,.mp3,.wav,.m4a,.aac,.flac,.ogg" multiple hidden>
+              </div>
+              <div class="music-workbench-row">
+                <button type="button" class="music-play-main" id="previewMusic">▶</button>
+                <input id="singleMusicSearch" type="search" placeholder="搜索音乐">
+                <select id="singleMusicSelect"><option value="">不加音乐</option></select>
+                <div class="waveform-placeholder" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="music-volume-field inline-volume">
+                  <input id="musicVolume" class="range" type="range" min="0" max="30" value="12" step="1">
+                  <output id="musicVolumeValue">12%</output>
+                </div>
+              </div>
+              <audio id="musicPreview" controls class="is-hidden music-preview"></audio>
+            </section>
+
+            <section class="fluent-card queue-workbench-card">
+              <div class="queue-heading">
+                <div><span class="card-kicker">后台生成</span><h2>任务队列 <em id="queueCountBadge">0</em></h2><p id="queueSummary">还没有任务，添加后会自动开始。</p></div>
+                <div class="queue-controls">
+                  <button type="button" class="secondary-button compact-button" id="pauseQueue">暂停后续任务</button>
+                  <button type="button" class="secondary-button compact-button" id="clearFinished">清理已完成</button>
+                  <button type="button" class="primary-button add-queue-button" id="startGenerate">添加并自动开始</button>
+                </div>
+              </div>
+              <div class="task-area is-hidden" id="taskArea">
+                <div class="progress-head"><span id="progressStage">等待任务</span><span id="progressValue">0%</span></div>
+                <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+              </div>
+              <div class="queue-list is-hidden" id="queueList"></div>
+              <div class="queue-empty" id="queueEmpty"><span>＋</span><strong>把第一条文案加入队列</strong><small>生成过程中仍然可以继续编辑和添加下一条。</small></div>
+              <div class="error-box is-hidden" id="errorBox"></div>
+              <div class="result-area is-hidden" id="resultArea"><video id="resultVideo" controls></video></div>
+              <div class="queue-footer-actions"><button type="button" class="secondary-button is-hidden" id="openResult">打开输出文件夹</button></div>
+              <button type="button" class="is-hidden" id="backFromGenerate">返回</button>
+            </section>
+          </div>
+
+          <div class="summary is-hidden" id="summary"><span id="summaryText"></span><span id="summaryVoice"></span><span id="summaryAvatar"></span><span id="summaryResolution"></span><span id="summaryTextOverlay"></span><span id="summaryBroll"></span><span id="summaryMusic"></span><span id="summaryOutput"></span></div>
+        </section>
+
+        <section class="panel library-panel" data-panel="2">
+          <div class="page-heading"><div><h1>声音模型</h1><p id="voiceLibraryHint">本地声音与 ElevenLabs 云端声音统一管理，生成时直接选择。</p></div><div class="page-actions"><button type="button" class="secondary-button" id="backFromVoiceLibrary">返回工作台</button><button type="button" class="secondary-button" id="managePersonsBtn1">人物管理</button><button type="button" class="secondary-button" id="manageElevenAccounts">账号与 API</button><button type="button" class="secondary-button" id="addElevenLabsVoice">添加云端声音</button><button type="button" class="primary-button" id="addLocalVoice">克隆本地声音</button></div></div>
+          <section class="elevenlabs-console" id="elevenLabsConsole">
+            <div class="elevenlabs-console-head"><span class="eleven-mark">XI</span><div><strong>ElevenLabs 云端</strong><small id="elevenSummary">尚未绑定 API，不影响本地声音使用</small></div><button type="button" class="secondary-button compact-button" id="quickAddElevenAccount">添加账号</button></div>
+            <div class="eleven-account-strip" id="elevenAccountStrip"></div>
+          </section>
+          <div class="material-guide"><strong>建议使用10–30秒清晰人声</strong><span>单人连续讲话，不要背景音乐或明显噪声；系统最多读取前30秒。</span></div>
+          <div class="voice-grid" id="voiceGrid"></div>
+        </section>
+
+        <section class="panel library-panel" data-panel="3">
+          <div class="page-heading"><div><h1>数字人形象</h1><p id="avatarLibraryHint">上传、预览、改名和管理所有可用形象。</p></div><div class="page-actions"><button type="button" class="secondary-button" id="backFromAvatarLibrary">返回工作台</button><button type="button" class="secondary-button" id="managePersonsBtn2">人物管理</button><button type="button" class="primary-button" id="addAvatar">上传数字人</button></div><input id="avatarUpload" type="file" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,.mp4,.mov,.avi,.mkv" hidden></div>
+          <div class="material-guide"><strong>支持数分钟长素材</strong><span>至少5秒，建议30秒以上；每次会从不同3秒刻度随机取景，降低动作重复。</span></div>
+          <div class="avatar-grid library-avatar-grid" id="avatarGrid"></div>
+        </section>
+
+        <section class="panel broll-library-panel library-panel" data-panel="5">
+          <div class="page-heading broll-library-titlebar"><div><h1>B-roll 素材</h1><p>查看素材画面、分类、标签和自动调用状态。</p></div><div class="page-actions"><button type="button" class="secondary-button" id="backFromBrollLibrary">返回工作台</button><button type="button" class="primary-button" id="addBroll">上传素材</button></div><input id="brollUpload" type="file" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm,.mp4,.mov,.avi,.mkv,.webm" multiple hidden></div>
+          <div class="broll-library-stats"><strong id="brollLibraryCount">正在读取素材库</strong><span id="brollUsableCount"></span></div>
+          <div class="broll-library-filters"><input id="brollSearch" type="search" placeholder="搜索画面、分类或标签"><select id="brollCategory"><option value="">全部分类</option></select><select id="brollPersonFilter"><option value="">全部人物</option></select><select id="brollStatus"><option value="">全部状态</option><option value="ready">可自动调用</option><option value="review">需审核</option><option value="disabled">暂不调用</option></select></div>
+          <div class="broll-upload-progress is-hidden" id="brollUploadProgress"></div>
+          <div class="broll-library-grid" id="brollLibraryGrid"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="avatar-modal is-hidden" id="avatarModal" role="dialog" aria-modal="true" aria-labelledby="avatarModalTitle">
+    <div class="avatar-modal-dialog"><div class="avatar-modal-head"><strong id="avatarModalTitle">形象预览</strong><button type="button" class="icon-button" id="closeAvatarModal" aria-label="关闭">×</button></div><video id="avatarPreviewVideo" controls playsinline></video></div>
+  </div>
+
+  <div class="voice-modal is-hidden" id="batchAvatarModal" role="dialog" aria-modal="true" aria-labelledby="batchAvatarModalTitle">
+    <div class="voice-modal-dialog batch-avatar-modal-dialog"><div class="voice-modal-head"><strong id="batchAvatarModalTitle">选择数字人</strong><button type="button" class="icon-button" id="closeBatchAvatarModal" aria-label="关闭">×</button></div><div class="batch-avatar-options" id="batchAvatarOptions"></div></div>
+  </div>
+
+  <div class="avatar-modal is-hidden" id="brollPreviewModal" role="dialog" aria-modal="true" aria-labelledby="brollPreviewTitle">
+    <div class="avatar-modal-dialog broll-preview-dialog"><div class="avatar-modal-head"><strong id="brollPreviewTitle">素材预览</strong><button type="button" class="icon-button" id="closeBrollPreview" aria-label="关闭">×</button></div><video id="brollPreviewVideo" controls playsinline></video><div class="broll-preview-meta" id="brollPreviewMeta"></div></div>
+  </div>
+
+  <div class="voice-modal is-hidden" id="voiceModal" role="dialog" aria-modal="true" aria-labelledby="voiceModalTitle">
+    <div class="voice-modal-dialog cloud-voice-dialog"><div class="voice-modal-head"><strong id="voiceModalTitle">添加 ElevenLabs 声音</strong><button type="button" class="icon-button" id="closeVoiceModal" aria-label="关闭">×</button></div><div class="voice-modal-body">
+      <input id="cloudVoiceRecordId" type="hidden">
+      <div class="field"><label class="field-label" for="cloudVoiceName">声音名称</label><input id="cloudVoiceName" type="text" placeholder="例如：我的旁白声音"></div>
+      <div class="field"><label class="field-label" for="cloudVoicePerson">所属人物</label><select id="cloudVoicePerson"><option value="">未分组</option></select></div>
+      <div class="two-column-fields"><div class="field"><label class="field-label" for="cloudVoiceAccount">调用账号</label><select id="cloudVoiceAccount"><option value="">自动选择可用账号</option></select></div><div class="field"><label class="field-label" for="cloudVoiceRemote">账号内声音</label><select id="cloudVoiceRemote"><option value="">手动输入 Voice ID</option></select></div></div>
+      <div class="field"><label class="field-label" for="cloudVoiceId">Voice ID</label><input id="cloudVoiceId" type="text" placeholder="绑定 API 后可直接从上方列表选择"></div>
+      <div class="two-column-fields"><div class="field"><label class="field-label" for="cloudVoiceModel">生成模型</label><select id="cloudVoiceModel"></select></div><div class="field"><label class="field-label" for="cloudVoiceOutputFormat">音频质量</label><select id="cloudVoiceOutputFormat"></select></div></div>
+      <div class="cloud-parameter-grid">
+        <label><span>稳定性 <output id="cloudStabilityValue">50%</output></span><input id="cloudStability" class="range" type="range" min="0" max="100" value="50"></label>
+        <label><span>相似度 <output id="cloudSimilarityValue">75%</output></span><input id="cloudSimilarity" class="range" type="range" min="0" max="100" value="75"></label>
+        <label><span>风格强度 <output id="cloudStyleValue">0%</output></span><input id="cloudStyle" class="range" type="range" min="0" max="100" value="0"></label>
+        <div class="setting-inline cloud-boost-setting"><div><span class="field-label">说话者增强</span><small>更贴近原声音，生成会稍慢</small></div><label class="fluent-switch"><input id="cloudSpeakerBoost" type="checkbox" checked><span></span></label></div>
+      </div>
+      <div class="cloud-config-note" id="cloudVoiceConfigNote">没有 API 也可以先完成界面配置；真正生成前需要绑定可用账号。</div>
+      <div class="voice-modal-actions"><button type="button" class="secondary-button" id="cancelVoiceModal">取消</button><button type="button" class="primary-button" id="saveElevenLabsVoice">保存配置</button></div>
+    </div></div>
+  </div>
+
+  <div class="voice-modal is-hidden" id="elevenAccountModal" role="dialog" aria-modal="true" aria-labelledby="elevenAccountModalTitle">
+    <div class="voice-modal-dialog account-modal-dialog"><div class="voice-modal-head"><strong id="elevenAccountModalTitle">ElevenLabs 账号与 API</strong><button type="button" class="icon-button" id="closeElevenAccountModal" aria-label="关闭">×</button></div><div class="voice-modal-body">
+      <div class="account-manager-list" id="elevenAccountList"></div>
+      <div class="account-editor">
+        <input id="elevenAccountId" type="hidden">
+        <div class="two-column-fields"><div class="field"><label class="field-label" for="elevenAccountName">账号名称</label><input id="elevenAccountName" type="text" placeholder="例如：主账号"></div><div class="field"><label class="field-label" for="elevenAccountPriority">调用顺序</label><select id="elevenAccountPriority"><option value="1">优先</option><option value="10" selected>普通</option><option value="20">备用</option></select></div></div>
+        <div class="field"><label class="field-label" for="elevenApiKey">API Key</label><input id="elevenApiKey" type="password" autocomplete="new-password" placeholder="暂时没有可以留空，以后再补"></div>
+        <label class="account-enabled-row"><input id="elevenAccountEnabled" type="checkbox" checked><span>允许这个账号参与调用</span></label>
+        <div class="cloud-config-note">API Key 只加密保存在当前电脑的 Windows 安全存储中，网页端和任务文件都看不到明文。</div>
+      </div>
+      <div class="voice-modal-actions"><button type="button" class="secondary-button" id="newElevenAccount">新建账号</button><button type="button" class="secondary-button" id="cancelElevenAccountModal">关闭</button><button type="button" class="primary-button" id="saveElevenAccount">保存账号</button></div>
+    </div></div>
+  </div>
+
+  <div class="voice-modal is-hidden" id="localVoiceModal" role="dialog" aria-modal="true" aria-labelledby="localVoiceModalTitle">
+    <div class="voice-modal-dialog"><div class="voice-modal-head"><strong id="localVoiceModalTitle">创建本地声音档案</strong><button type="button" class="icon-button" id="closeLocalVoiceModal" aria-label="关闭">×</button></div><div class="voice-modal-body">
+      <div class="field"><label class="field-label" for="localVoiceName">声音名称</label><input id="localVoiceName" type="text" maxlength="80" placeholder="例如：我的旁白声音"></div>
+      <div class="field"><label class="field-label" for="localVoicePerson">所属人物</label><select id="localVoicePerson"><option value="">未分组</option></select></div>
+      <div class="field"><label class="field-label" for="localVoiceEngine">声音引擎</label><select id="localVoiceEngine"><option value="voxcpm" selected>VoxCPM 2 · 本地免费 · 新一代高音质（推荐）</option><option value="v2">IndexTTS-2 · 本地免费 · 经典稳定</option></select></div>
+      <div class="field" id="localVoiceModeField">
+        <label class="field-label">克隆模式</label>
+        <div class="clone-mode-grid">
+          <label class="clone-mode-card"><input type="radio" name="localVoiceMode" value="ultimate" checked><span><strong>极致克隆 <em>推荐</em></strong><small>样本音频 + 对照文本，音色和语气还原度最高</small></span></label>
+          <label class="clone-mode-card"><input type="radio" name="localVoiceMode" value="reference"><span><strong>参考克隆</strong><small>只需要样本音频，上手快，还原度略低</small></span></label>
+        </div>
+        <small class="clone-mode-note">VoxCPM 还有一种"音色设计"模式（不用样本、用文字描述音色），不适合保存为长期声音档案，暂未开放。</small>
+      </div>
+      <div class="field" id="localVoiceTranscriptField">
+        <div class="range-head"><label class="field-label" for="localVoiceTranscript">样本对照文本</label><button type="button" class="text-button" id="transcribeLocalVoice">用本地模型转写</button></div>
+        <textarea id="localVoiceTranscript" class="compact-textarea" maxlength="500" placeholder="样本音频里说的话。点右上角“用本地模型转写”自动生成，校对无误后再克隆"></textarea>
+      </div>
+      <div class="field"><label class="field-label" for="localVoicePath">声音样本</label><div class="file-row"><input id="localVoicePath" type="text" readonly placeholder="上传10–30秒清晰声音或视频"><button type="button" class="secondary-button" id="pickLocalVoiceSample">上传</button><input id="localVoiceUpload" type="file" accept="audio/*,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,.wav,.mp3,.m4a,.flac,.aac,.mp4,.mov,.avi,.mkv" hidden></div></div>
+      <div class="voice-file-note">素材至少3秒，建议10–30秒；上传后立即克隆，完成后可长期使用。</div>
+      <div class="voice-clone-progress is-hidden" id="voiceCloneProgress"><div class="progress-head"><span id="voiceCloneStage">正在准备声音克隆</span><span id="voiceCloneValue">0%</span></div><div class="progress-track"><div class="progress-fill" id="voiceCloneFill"></div></div></div>
+      <div class="voice-modal-actions"><button type="button" class="secondary-button" id="cancelLocalVoiceModal">取消</button><button type="button" class="primary-button" id="saveLocalVoice">开始克隆</button></div>
+    </div></div>
+  </div>
+
+  <div class="voice-modal is-hidden" id="renameModal" role="dialog" aria-modal="true" aria-labelledby="renameModalTitle">
+    <div class="voice-modal-dialog rename-modal-dialog"><div class="voice-modal-head"><strong id="renameModalTitle">编辑名称</strong><button type="button" class="icon-button" id="closeRenameModal" aria-label="关闭">×</button></div><div class="voice-modal-body">
+      <div class="field"><label class="field-label" for="renameName">名称</label><input id="renameName" type="text" maxlength="80" autocomplete="off" placeholder="输入新的名称"></div>
+      <div class="field"><label class="field-label" for="renamePersonSelect">所属人物</label><select id="renamePersonSelect"><option value="">未分组</option></select></div>
+      <div class="field is-hidden" id="renameTranscriptField">
+        <div class="range-head"><label class="field-label" for="renameTranscript">样本对照文本</label><button type="button" class="text-button" id="transcribeRenamedVoice">用本地模型转写</button></div>
+        <textarea id="renameTranscript" class="compact-textarea" maxlength="500" placeholder="本地声音样本里说的话；VoxCPM 声音填了之后自动走极致克隆"></textarea>
+      </div>
+      <div class="voice-modal-actions"><button type="button" class="secondary-button" id="cancelRenameModal">取消</button><button type="button" class="primary-button" id="saveRename">保存</button></div>
+    </div></div>
+  </div>
+
+  <div class="voice-modal is-hidden" id="personModal" role="dialog" aria-modal="true" aria-labelledby="personModalTitle">
+    <div class="voice-modal-dialog"><div class="voice-modal-head"><strong id="personModalTitle">人物管理</strong><button type="button" class="icon-button" id="closePersonModal" aria-label="关闭">×</button></div><div class="voice-modal-body">
+      <div class="account-manager-list" id="personList"></div>
+      <div class="person-add-row">
+        <input id="personNameInput" type="text" maxlength="40" autocomplete="off" placeholder="输入人物名称，例如：讲师A">
+        <button type="button" class="primary-button" id="addPersonBtn">添加人物</button>
+      </div>
+      <div class="voice-modal-actions"><button type="button" class="secondary-button" id="cancelPersonModal">关闭</button></div>
+    </div></div>
+  </div>
+
+  <div class="voice-modal is-hidden" id="outputPathModal" role="dialog" aria-modal="true" aria-labelledby="outputPathModalTitle">
+    <div class="voice-modal-dialog output-path-dialog">
+      <div class="voice-modal-head"><strong id="outputPathModalTitle">选择视频保存位置</strong><button type="button" class="icon-button" id="closeOutputPathModal" aria-label="关闭">×</button></div>
+      <div class="voice-modal-body">
+        <div class="field"><label class="field-label" for="outputPathInput">文件夹路径</label><input id="outputPathInput" type="text" placeholder="例如：D:\数字人视频"></div>
+        <div class="folder-choice-actions"><button type="button" class="secondary-button" id="useDefaultOutputPath">使用默认位置</button><button type="button" class="secondary-button" id="browseOutputPath">浏览文件夹</button></div>
+        <small class="dialog-note">如果系统选择窗口没有显示，也可以直接粘贴完整文件夹路径。</small>
+        <div class="voice-modal-actions"><button type="button" class="secondary-button" id="cancelOutputPathModal">取消</button><button type="button" class="primary-button" id="saveOutputPath">使用此文件夹</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="voice-modal is-hidden" id="brollEditModal" role="dialog" aria-modal="true" aria-labelledby="brollEditModalTitle">
+    <div class="voice-modal-dialog broll-edit-dialog">
+      <div class="voice-modal-head"><strong id="brollEditModalTitle">编辑 B-roll 素材</strong><button type="button" class="icon-button" id="closeBrollEditModal" aria-label="关闭">×</button></div>
+      <div class="voice-modal-body">
+        <div class="field"><label class="field-label" for="brollEditName">素材名称</label><input id="brollEditName" type="text" maxlength="120"></div>
+        <div class="field"><label class="field-label" for="brollEditCategory">分类</label><input id="brollEditCategory" type="text" maxlength="60"></div>
+        <div class="field"><label class="field-label" for="brollEditTags">索引标签</label><textarea id="brollEditTags" class="compact-textarea" placeholder="用逗号分隔，例如：雨夜、城市、独处"></textarea></div>
+        <div class="field"><label class="field-label" for="brollEditStatus">自动调用状态</label><select id="brollEditStatus"><option value="ready">可自动调用</option><option value="review">需要审核</option><option value="disabled">暂不调用</option></select></div>
+        <div class="field"><label class="field-label" for="brollEditPerson">所属人物</label><select id="brollEditPerson"><option value="">未分组</option></select></div>
+        <div class="voice-modal-actions"><button type="button" class="secondary-button" id="cancelBrollEditModal">取消</button><button type="button" class="primary-button" id="saveBrollEdit">保存修改</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="voice-modal is-hidden" id="setupModal" role="dialog" aria-modal="true" aria-labelledby="setupModalTitle">
+    <div class="voice-modal-dialog setup-dialog"><div class="voice-modal-head"><strong id="setupModalTitle">组件与下载</strong><button type="button" class="icon-button" id="closeSetupModal" aria-label="关闭">×</button></div><div class="voice-modal-body">
+      <div class="cloud-config-note" id="setupIntro">首次使用需要安装口型模型运行环境，其余组件按需勾选；下载安装全程自动完成，中途可取消。</div>
+      <div class="setup-gpu-line" id="setupGpuLine"><span id="setupGpuText">正在检测显卡…</span><button type="button" class="text-button is-hidden" id="setupGpuTweak">按 8GB 显卡放宽显存门槛</button></div>
+      <div class="setup-bundle-line" id="setupBundleLine"><span id="setupBundleText">未指定离线组件包</span><button type="button" class="text-button" id="setupBundlePick">选择离线包文件夹</button></div>
+      <div class="setup-step-list" id="setupStepList"></div>
+      <div class="setup-progress is-hidden" id="setupProgress">
+        <div class="progress-head"><span id="setupStage">准备安装</span><span id="setupValue">0%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="setupFill"></div></div>
+        <div class="setup-log" id="setupLog"></div>
+      </div>
+      <div class="voice-modal-actions"><button type="button" class="secondary-button is-hidden" id="cancelSetupInstall">取消安装</button><button type="button" class="secondary-button" id="closeSetupModalBottom">关闭</button><button type="button" class="primary-button" id="startSetupInstall">安装选中的组件</button></div>
+    </div></div>
+  </div>
+
+  <div class="toast is-hidden" id="toast" role="alert"></div>
+  <script src="/ui-fx.js?v=20260817-1" defer></script>
+  <script src="/app.js?v=20260817-4"></script>
+</body>
+</html>

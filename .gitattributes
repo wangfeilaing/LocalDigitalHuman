@@ -1,0 +1,17 @@
+# 行尾与二进制处理：避免 Windows 检出时把文件改坏
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.vbs text eol=crlf
+
+# 二进制资源不参与行尾转换（也便于 git 正确判断 diff）
+*.mp4 binary
+*.mp3 binary
+*.jpg binary
+*.png binary
+*.ico binary
+*.otf binary
+*.zip binary
+*.pdf binary
+*.npz binary
