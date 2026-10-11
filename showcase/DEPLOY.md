@@ -236,6 +236,57 @@ server {
 
 ---
 
+## 二之三、部署后端应用踩过的三个坑（学员交付系统实录）
+
+### 1. 替换 SQLite 数据库时必须连 `-wal` / `-shm` 一起删
+
+SQLite 开了 WAL 模式后，`app.db-wal` 里可能还留着**未检查点的旧页**。
+只覆盖 `app.db` 而保留旧的 `-wal`/`-shm`，下次启动时旧数据会被**重放到新库上**——
+症状是"新旧数据混在一起"（这次换完演示库后，头像路径一半是新的、一半是旧的）。
+
+正确顺序：
+
+```bash
+sudo systemctl stop <服务名>          # 先停，否则进程一直持有旧文件的句柄
+rm -f data/app.db data/app.db-wal data/app.db-shm
+rm -rf data/uploads && tar -xzf 数据包.tar.gz -C /opt/<项目>/
+sudo systemctl start <服务名>
+```
+
+### 2. 素材路径的基准目录要照抄代码，不要靠直觉
+
+这个项目的 `src/lib/storage.ts` 写着：
+
+```ts
+const UPLOADS_DIR = path.join(process.cwd(), 'data', 'uploads');
+// saveUpload 写入 data/uploads/<type>/<ipId>/<uuid>.<ext>
+// 数据库里存的是相对 UPLOADS_DIR 的 "<type>/<ipId>/<文件名>"
+// 前端再拼成 /api/uploads/<路径>
+```
+
+所以库里存的是 `avatars/3/xxx.jpg`，**不是** `uploads/avatars/3/xxx.jpg`，也不是相对 `data/` 的路径。
+第一版按直觉写成 `uploads/demo-N.jpg`，应用会去找 `data/uploads/uploads/...`，
+结果**所有学员头像与截图全是一片空白**。造演示素材前，先读一遍负责路径拼接的那个文件。
+
+### 3. 需要登录的资源，验证时必须带会话 cookie
+
+这类应用的 `/api/uploads` 往往也在鉴权范围内。裸 `curl` 请求返回 **401**，
+很容易被误判成"图片 404 了"，其实是没登录：
+
+```bash
+printf '%s' '{"username":"admin","password":"admin123"}' > /tmp/b.json
+curl -s -c /tmp/cj.txt -o /dev/null -X POST http://127.0.0.1:3001/api/auth/login \
+  -H 'Content-Type: application/json' --data-binary @/tmp/b.json
+curl -s -b /tmp/cj.txt -o /dev/null -w "%{http_code} %{content_type}\n" \
+  http://127.0.0.1:3001/api/uploads/avatars/3/demo-1.jpg
+```
+
+顺带一个通用教训：**验证要挑对对象**。学员列表是客户端渲染的，服务端 HTML 里没有头像 URL，
+用 `curl` 抓页面再 grep 图片地址必然搜不到——该验的是前端渲染所依赖的**接口返回数据**
+加上**图片资源本身能否取到**。
+
+---
+
 ## 三、方案 B：EdgeOne Pages 免费版 + 未备案域名
 
 适合不想买服务器、且能接受「大陆流量走海外节点（延迟略高）」的情况。
