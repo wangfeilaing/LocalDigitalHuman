@@ -323,4 +323,5 @@ python -m http.server 8080 --directory D:\LocalDigitalHuman\showcase   # http://
 | 视频不能拖进度 | 服务端不支持 Range | 用 nginx，别用简易 http.server 长期跑 |
 | 打开是下载而不是网页 | 用了 OSS/COS 默认域名 | 换成本文的方案 A 或 B |
 | 首屏加载很慢 | 带宽档太低或素材被换大 | 跑 `media` 阶段会做体积硬闸自检；或升到 5M 带宽 |
+| `git push` 报 schannel / TLS 握手失败 | Git for Windows 默认用 schannel，会去查证书吊销列表，而国内连不上 CRL 服务器（报 `CRYPT_E_REVOCATION_OFFLINE`）；若同时挂着本地代理而其上游节点已挂，会更像"网络不通" | 在该仓库里执行 `git config --local http.sslBackend openssl` 与 `git config --local http.proxy ""`，然后多试几次（国内直连 GitHub 时通时断，实测第 5 次成功） |
 | 演示页点按钮报「演示模式」 | 正常行为 | 静态站跑不了真实模型，真机能力见方案 C |
